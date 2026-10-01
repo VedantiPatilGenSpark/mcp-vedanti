@@ -10,7 +10,7 @@
   "features": {
     "ghcr.io/devcontainers/features/github-cli:1": {}
   },
-  "postCreateCommand": "pip install --disable-pip-version-check -r requirements.txt",
+  "postCreateCommand": "pip install --disable-pip-version-check -r requirements-dev.txt",
   "customizations": {
     "vscode": {
       "extensions": [
