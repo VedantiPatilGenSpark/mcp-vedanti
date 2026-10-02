@@ -1,9 +1,27 @@
 """Equipment lookups, eligibility, and the in-memory escalation store."""
 
+import datetime
+
+from mcp_vedanti.data import AS_OF, EMPLOYEES
+
+
+def _tenure_years(hire_date: str) -> float:
+    """Years employed as of AS_OF, rounded to one decimal."""
+    hired = datetime.date.fromisoformat(hire_date)
+    return round((AS_OF - hired).days / 365.25, 1)
+
 
 def get_employee_info(employee_id: str) -> dict:
     """Return role, tenure, and equipment for one employee."""
-    raise NotImplementedError
+    record = EMPLOYEES.get(employee_id)
+    if record is None:
+        return {"employee_id": employee_id, "status": "not_found"}
+    return {
+        "employee_id": record["employee_id"],
+        "role": record["role"],
+        "tenure_years": _tenure_years(record["hire_date"]),
+        "equipment": [dict(unit) for unit in record["equipment"]],
+    }
 
 
 def get_policy_limits(role: str) -> dict:
