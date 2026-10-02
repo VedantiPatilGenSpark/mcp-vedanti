@@ -91,7 +91,7 @@ A tenure shortfall stays `out_of_policy`. The buffer does not open the standard 
 | Known item, absent from this role's sheet | `false` | `out_of_policy` | Deny. Do not escalate. |
 | At `max_count`, and the due date is more than 90 days away | `false` | `out_of_policy` | Deny. Do not escalate. |
 | Tenure is below `min_tenure_years` | `false` | `out_of_policy` | Deny. Do not escalate. |
-| An issue date the rule needs is missing | `null` | `indeterminate` | Escalate. |
+| At `max_count`, and a unit of that item has no issue date | `null` | `indeterminate` | Escalate. The seed data has no row like this. The function still refuses to invent a due date if one appears. |
 | The item is not in the catalog, such as `headset` | `null` | `indeterminate` | Escalate. |
 | The count on file is already above `max_count` | `null` | `indeterminate` | Escalate. |
 | At `max_count`, the oldest unit is due, and the newest is not | `null` | `indeterminate` | Escalate. The reason names both issue dates. |
@@ -101,7 +101,7 @@ A tenure shortfall stays `out_of_policy`. The buffer does not open the standard 
 
 `in_policy` and `out_of_policy` are clear. The assistant writes the approval or the denial from the tool's `reason` and `facts`.
 
-`indeterminate` means the server will not guess. Some of those rows are gaps in the data: a missing date, an unknown item, a count already over the cap, or a role with no sheet. The split history and the 90-day buffer are different. The dates are complete, and they still do not pick a side. `not_found` is also not a denial. Denying a person who is not on file would be a guess. All of these are successful tool results. `within_policy` is `null`, and the assistant escalates.
+`indeterminate` means the server will not guess. A headset request, a count already over the cap, and a role with no sheet are cases the stored records can produce. A missing issue date is not one of those records. Every seeded unit has a date, because a write would have required one. If a unit at the cap has no date anyway, eligibility still returns `indeterminate` instead of inventing a due date. The split history and the 90-day buffer are different from all of these. Those dates are complete, and they still do not pick a side. `not_found` is also not a denial. Denying a person who is not on file would be a guess. All of these are successful tool results. `within_policy` is `null`, and the assistant escalates.
 
 A call that omits an argument, or sends a number where a string is required, fails in the tool schema before eligibility runs. That failure is not one of the statuses above.
 
