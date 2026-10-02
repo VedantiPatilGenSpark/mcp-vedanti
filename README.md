@@ -11,3 +11,9 @@ The app directory on this Mac is `/Users/VedantiV.Patil/MCP_Vedanti`. Opening th
 3. Command Palette → **Dev Containers: Reopen in Container**.
 
 Python 3.12, `mcp`, and `pytest` are installed in the image. The GitHub CLI is added by the dev container feature, so `gh` is available inside the container after you sign in.
+
+## Server
+
+`src/mcp_vedanti/server.py` registers four MCP tools: `get_employee_info`, `get_policy_limits`, `check_request_eligibility`, and `flag_for_human_review`. The rules live in `src/mcp_vedanti/equipment.py`. `reset_escalations` clears the in-memory ticket list and is not a tool.
+
+Inside the container, run the tests with `pytest`. The eligibility check order and the reason sentences are in `docs/implementation-decisions.md`.

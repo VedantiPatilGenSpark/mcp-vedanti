@@ -1,8 +1,6 @@
 # PRD: server unit tests
 
-Write only tests. Do not create or edit production modules, including `src/mcp_vedanti/data.py`, `equipment.py`, and `server.py`. Do not implement a function so that a test can pass.
-
-These tests are written before the server logic exists. Importing `mcp_vedanti.equipment` will fail until that module is added later. Leave that failure in place. Do not stub the functions, skip tests, or mark them expected-fail.
+These tests are the contract for the server functions. They were written before the functions existed. The functions now pass them. Do not weaken a test to match a later change in the server.
 
 The behavior under test is `requirements.md`. The records under test are `docs/prd-mock-data.md`. Use those employee ids, dates, and tenure numbers. Do not add a person, and do not compute an expected status by calling the function under test.
 
@@ -112,4 +110,4 @@ The test file does not approve, deny, or decide who should be flagged. It only c
 
 ## Done when
 
-The five test modules exist, every row above has a test, and no production file was added or edited. A run may fail at import of `mcp_vedanti.equipment`. Corpus tests can pass once `data.py` matches `docs/prd-mock-data.md`.
+The five test modules exist, every row above has a test, and those tests pass against `data.py` and `equipment.py`. Corpus tests assert the records in `docs/prd-mock-data.md`. The function tests do not open an MCP client.

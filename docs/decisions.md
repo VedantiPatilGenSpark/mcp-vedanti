@@ -67,11 +67,11 @@ Tests cover a real id and a missing id. `hire_date` is not part of this return.
 
 ```json
 {
-  "employee_id": "E102",
+  "employee_id": "E202",
   "role": "standard",
-  "tenure_years": 4.2,
+  "tenure_years": 8.6,
   "equipment": [
-    {"item": "monitor", "issued_on": "2022-01-15"}
+    {"item": "monitor", "issued_on": "2023-08-01"}
   ]
 }
 ```
@@ -106,7 +106,7 @@ The rule sheet for a role. No employee, no dates, no yes or no. An unknown role 
 
 `items` is what that role may request. The wait period is `refresh_years` on each item. One period for the whole role cannot express "monitor every 3 years, laptop every 2 years." This function still takes only `role`.
 
-The same item may also differ across roles. `monitor` on `standard` can be 3 years while `monitor` on `manager` is 2. Mock data should use at least one item whose `refresh_years` is not the same on every role, so tests cover both sheets.
+The same item may also differ across roles. `monitor` on `standard` is 3 years while `monitor` on `director` is 2. The mock data uses that difference so tests cover both sheets.
 
 `max_count` is how many units of that item the role may have on file. `min_tenure_years` is the threshold written on the rule, not a check this function runs. This function has no employee, so it does not know anyone's tenure and it does not drop items. `0` means the threshold does not block. `check_request_eligibility` is what compares `tenure_years` with `min_tenure_years`.
 
@@ -114,16 +114,21 @@ The same item may also differ across roles. `monitor` on `standard` can be 3 yea
 
 Looks up the employee and that role's rule internally. The agent cannot pass in a role or a history. The agent still calls the two lookup tools itself so the trace shows the investigation.
 
-The clock is the issue date of equipment on file for this item, compared with this item's `refresh_years`. It is not the date of the last request of any kind. The due date is the newest `issued_on` plus `refresh_years` calendar years. A server-wide early-request buffer of 90 days sits immediately before that due date.
+The first match returns.
 
-Under `max_count`, with enough tenure, the request is in policy. The buffer does not apply, because the role still has room for another unit.
-
-At `max_count`, decide in this order:
-
-1. Split history. More than one unit, the oldest is already due, and the newest is not. The dates disagree about whether a replacement is due, so the status is `indeterminate`. This is checked before the buffer.
-2. The newest unit is already due. Status is `in_policy`.
-3. The as-of date is inside the 90 days before the due date. Status is `indeterminate`. The sheet says not yet. A person might still approve it so the unit arrives as the period turns over.
-4. The due date is more than 90 days away. Status is `out_of_policy`.
+1. Unknown `employee_id` → `not_found`. No `facts`. This wins even when the item is `headset`.
+2. Role has no sheet → `indeterminate`.
+3. Item is not in the catalog → `indeterminate`.
+4. Item is known but not on this role's sheet → `out_of_policy`.
+5. Tenure is below `min_tenure_years` → `out_of_policy`. The buffer does not open this.
+6. Count of that item is above `max_count` → `indeterminate`. Issue dates are not read.
+7. Count is under `max_count`, and tenure is enough → `in_policy`. The buffer does not apply, because the role still has room for another unit. A blank issue date on this path does not escalate.
+8. Count equals `max_count`. The due date is the newest `issued_on` plus `refresh_years` calendar years. February 29 in a year that has no February 29 becomes February 28. The clock is the issue date of equipment on file for this item. It is not the date of the last request of any kind. A server-wide early-request buffer of 90 days sits immediately before that due date. Then:
+   1. A unit of that item has no `issued_on` → `indeterminate`. No due date is calculated.
+   2. Split history. More than one unit, the oldest is already due, and the newest is not → `indeterminate`. This is checked before the buffer. One unit cannot split.
+   3. The newest unit is already due → `in_policy`.
+   4. The as-of date is inside the 90 days before the due date → `indeterminate`. The sheet says not yet. A person might still approve it so the unit arrives as the period turns over.
+   5. The due date is more than 90 days away → `out_of_policy`.
 
 A tenure shortfall is `out_of_policy` and is not softened by the buffer. One unit cannot be a split history, because the oldest and the newest are the same unit.
 
@@ -143,16 +148,16 @@ A tenure shortfall is `out_of_policy` and is not softened by the buffer. One uni
 
 ```json
 {
-  "employee_id": "E102",
+  "employee_id": "E202",
   "item": "monitor",
   "within_policy": true,
   "status": "in_policy",
-  "reason": "Has 1 monitor issued 2022-01-15. Standard limit is 1 every 3 years. Refresh is due.",
+  "reason": "Has 1 monitor issued 2023-08-01. Standard limit is 1 every 3 years. Refresh is due.",
   "facts": {
     "role": "standard",
-    "tenure_years": 4.2,
+    "tenure_years": 8.6,
     "count_on_file": 1,
-    "newest_issued_on": "2022-01-15",
+    "newest_issued_on": "2023-08-01",
     "max_count": 1,
     "refresh_years": 3,
     "min_tenure_years": 0
@@ -160,7 +165,7 @@ A tenure shortfall is `out_of_policy` and is not softened by the buffer. One uni
 }
 ```
 
-`facts` holds the numbers the reason used. A later draft may cite only these.
+`facts` holds the labeled numbers. `reason` is one sentence for the outcome that matched. The role in the sentence is capitalized. The sentences are listed in `docs/implementation-decisions.md`.
 
 A bool is not enough. The agent needs `status` so it does not invent the approve, deny, or escalate boundary.
 
@@ -168,7 +173,7 @@ A bool is not enough. The agent needs `status` so it does not invent the approve
 
 Side effect means this function changes state on the server, instead of only computing an answer. The store is a list in the server process. Tests can reset it. The record dies when that process stops. The client does not write the list. It calls the tool, and the return value is a copy of the record the server just appended. Routing to a person, inbox, or ticket system is out of scope.
 
-`request` is the original request text. `reason` is the agent's escalation reason, taken from tool results.
+`request` is the original request text. `reason` is the eligibility sentence for that outcome, passed through by the agent.
 
 An unknown `employee_id` is still stored. The queue can hold a case for a person who is not on file. The call does not return not-found and does not leave the list unchanged.
 
@@ -177,11 +182,13 @@ Returns the stored record, including an id:
 ```json
 {
   "escalation_id": "ESC-1",
-  "employee_id": "E102",
-  "request": "I need a second monitor.",
-  "reason": "Item 'projector' is not in the catalog, so eligibility is indeterminate."
+  "employee_id": "E207",
+  "request": "I need a headset.",
+  "reason": "Item 'headset' is not in the catalog."
 }
 ```
+
+`reason` is a required string. The tool stores it and does not accept null. The agent calls this tool only for `indeterminate` and `not_found`. The id is `ESC-` plus the number of tickets currently stored. Clearing the list makes the next id `ESC-1` again. `reset_escalations` clears the list and is not an MCP tool.
 
 ## Who decides
 

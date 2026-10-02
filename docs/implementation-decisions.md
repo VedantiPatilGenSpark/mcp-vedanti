@@ -1,6 +1,6 @@
 # Implementation decisions
 
-Running record of how `src/mcp_vedanti/equipment.py` is built. `docs/decisions.md` locks the product rules. This file records the choices made while implementing them. Add a section when a function lands. Do not edit the tests to match this file.
+How the finished server in `src/mcp_vedanti/equipment.py` and `src/mcp_vedanti/server.py` behaves. `docs/decisions.md` locks the product rules. This file records how those rules are built, including the check order and the reason sentences.
 
 The functions stay plain. `server.py` registers four of them as MCP tools and does not contain the rules.
 

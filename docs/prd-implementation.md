@@ -1,28 +1,8 @@
 # PRD: server logic, with Vedanti
 
-Implement the four plain functions until the existing tests pass. The tests and the mock data are already written. Do not edit them. If a test fails, change the implementation.
+This work is done. The four functions, `reset_escalations`, and MCP registration match the behavior below. The check order and the reason sentences as built are in `docs/implementation-decisions.md`.
 
-Read `requirements.md`, `docs/decisions.md`, `docs/prd-mock-data.md`, and `docs/prd-tests.md` before writing code. The test PRD is the contract, including the check order and the reason fragments.
-
-Work one function at a time, with Vedanti. After a function's tests pass, stop and wait before starting the next. Do not commit unless Vedanti asks.
-
-## Files you may edit
-
-- `src/mcp_vedanti/equipment.py` — the four functions and `reset_escalations`.
-- `src/mcp_vedanti/server.py` — only in the last step, after every plain-function test passes.
-
-Do not edit `src/mcp_vedanti/data.py`, anything under `tests/`, `requirements.md`, or the decision record.
-
-## Order of work
-
-1. Add `equipment.py` with `get_employee_info`, `get_policy_limits`, `check_request_eligibility`, `flag_for_human_review`, and `reset_escalations`. Bodies may raise `NotImplementedError` so the suite collects. Then stop.
-2. Implement `get_employee_info` until `tests/test_get_employee_info.py` passes.
-3. Implement `get_policy_limits` until `tests/test_get_policy_limits.py` passes.
-4. Implement `check_request_eligibility` until `tests/test_check_request_eligibility.py` passes.
-5. Implement `flag_for_human_review` and `reset_escalations` until `tests/test_flag_for_human_review.py` passes.
-6. Only then, and only if Vedanti says to continue, register the four functions as MCP tools on the server in `server.py`. Remove the throwaway `add` tool in that same step. Do not register `add` and the real tools together.
-
-Run the relevant test file after each step. Do not weaken a test to get a pass.
+The tests and the mock data were already written. They were not edited to make a test pass. `src/mcp_vedanti/equipment.py` holds the functions. `src/mcp_vedanti/server.py` registers the four tools.
 
 ## Behavior
 
@@ -34,10 +14,10 @@ Tenure is `(AS_OF - hire_date).days / 365.25`, rounded to one decimal. Return `t
 
 `get_employee_info` and `get_policy_limits` return a `status: not_found` dict for an unknown id or role. They do not raise.
 
-`check_request_eligibility` follows the order in `docs/prd-tests.md`. At `max_count`, split history is decided before the 90-day buffer. Under the cap, a missing issue date does not escalate. At the cap, a unit of that item with no `issued_on` is `indeterminate`. The seed data has no such unit. That branch is a guard so a blank date is not turned into a guessed due date. `within_policy` is `None` for `indeterminate` and `not_found`.
+`check_request_eligibility` follows the order in `docs/prd-tests.md`. Under the cap, a missing issue date does not escalate. At the cap, a unit of that item with no `issued_on` is `indeterminate` before split history is considered, and split history is decided before the 90-day buffer. The seed data has no blank date. That branch is a guard so a blank date is not turned into a guessed due date. `within_policy` is `None` for `indeterminate` and `not_found`. The due date is `issued_on` plus `refresh_years` calendar years. February 29 in a year that has no February 29 becomes February 28.
 
-The escalation store is a list in this module. `flag_for_human_review` appends one record and returns that record. Ids are `ESC-1`, then `ESC-2`, counting only what is currently stored. `reset_escalations` clears the list. An unknown employee id is still stored. This function does not read policy and does not change `EMPLOYEES`.
+The escalation store is a list in this module. `flag_for_human_review` appends one record and returns a copy of that record. The agent calls it only for `indeterminate` and `not_found`. `reason` is a required string and is stored as given. Ids are `ESC-1`, then `ESC-2`, counting only what is currently stored. `reset_escalations` clears the list. An unknown employee id is still stored. This function does not read policy and does not change `EMPLOYEES`.
 
 ## Done when
 
-`tests/test_corpus.py` and the four function test files pass. `server.py` is unchanged until Vedanti asks for the MCP registration step.
+`tests/test_corpus.py` and the four function test files pass. `server.py` registers `get_employee_info`, `get_policy_limits`, `check_request_eligibility`, and `flag_for_human_review`. The throwaway `add` tool is not registered. `reset_escalations` is not a tool.

@@ -2,6 +2,8 @@
 
 The mock data is built so each eligibility rule has its own record. The as-of date is **2026-10-01**. A standard employee may hold one monitor, refreshed every 3 years. A manager may hold two. Asking for a different item on the same person can be a different case.
 
+The tool `reason` for each case is the outcome sentence in `docs/implementation-decisions.md`. The notes below say why the case lands on that outcome.
+
 Dates are fixed. The suite does not use the calendar day you run it.
 
 ## Clear approval

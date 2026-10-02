@@ -69,16 +69,21 @@ The refresh clock is the issue date of equipment already on file for that item. 
 
 ## How eligibility decides
 
-`check_request_eligibility` loads the employee and that role's sheet itself. The caller cannot pass in a role or a history.
+`check_request_eligibility` loads the employee and that role's sheet itself. The caller cannot pass in a role or a history. The first match returns.
 
-When the person is under `max_count` and has enough tenure, the request is in policy. Existing units do not have to be old yet, because the role still has room for another unit. The 90-day buffer does not apply on this path.
-
-When the person is exactly at `max_count`, this is a replacement. Decide in this order:
-
-1. **Split history.** There is more than one unit, the oldest is already due, and the newest is not. The file itself disagrees about whether a replacement is due, so the status is `indeterminate`. A manager with two monitors, at a cap of 2, one issued in 2020 and one issued in 2026, is this case. One monitor is not: that person is under the cap of 2, so the request is a clear approval. A single unit cannot split, because the oldest and the newest are the same object. This check comes before the buffer.
-2. **Refresh is due.** The newest unit's due date is on or before 2026-10-01. The status is `in_policy`.
-3. **Early-request buffer.** The as-of date falls in the 90 days before the due date. The status is `indeterminate`. The sheet says the period is not over. A person might still approve the request so the equipment is fulfilled as the next period starts. The server will not choose.
-4. **Too soon.** The due date is more than 90 days away. The status is `out_of_policy`.
+1. **Unknown employee.** Status is `not_found`. The result has no `facts`. This wins even when the item is `headset`.
+2. **Role has no sheet.** Status is `indeterminate`. `contractor` stops here.
+3. **Item is not in the catalog.** Status is `indeterminate`. `headset` is not a denial.
+4. **Item is not on this role's sheet.** Status is `out_of_policy`. A standard dock stops here.
+5. **Tenure is below `min_tenure_years`.** Status is `out_of_policy`. The comparison is `<`. The 90-day buffer does not open this. E205's laptop stops here. The same person's monitor has a minimum of 0, so it continues.
+6. **Count is above `max_count`.** Status is `indeterminate`. The file already holds more units than the sheet allows. Issue dates are not read. E208 stops here.
+7. **Count is under `max_count`.** Status is `in_policy`. The role still has room for another unit, so existing units do not have to be old yet. Issue dates are not required, and a blank date on this path does not escalate. E201's one monitor against a manager cap of 2 stops here.
+8. **Count equals `max_count`.** This is a replacement. The due date is `issued_on` plus `refresh_years` calendar years. February 29 in a year that has no February 29 becomes February 28. Decide in this order:
+   1. **Missing `issued_on`.** Any unit of this item has no issue date. Status is `indeterminate`. No due date is calculated. The seed data has no such unit.
+   2. **Split history.** More than one unit, the oldest is already due, and the newest is not. Status is `indeterminate`. One unit cannot split, because the oldest and the newest are the same object. This runs before the buffer. E211 stops here.
+   3. **Refresh is due.** The newest unit's due date is on or before 2026-10-01. Status is `in_policy`.
+   4. **Early-request buffer.** The as-of date falls in the 90 days before the due date, and the due date is still after 2026-10-01. Status is `indeterminate`. The sheet says the period is not over. A person might still approve the request so the equipment is fulfilled as the next period starts. The server will not choose.
+   5. **Too soon.** The due date is more than 90 days away. Status is `out_of_policy`.
 
 A standard monitor issued on 2023-08-01 is due on 2026-08-01, which is already past, so a person at the cap is a clear approval. The same monitor issued on 2024-01-15 comes due on 2027-01-15. On 2026-10-01 that due date is 106 days away, which is outside the buffer, so it is a clear denial. Issued so that the due date falls inside the next 90 days, it escalates.
 
@@ -113,7 +118,7 @@ The mock data is able to produce every row of this table.
 
 The assistant calls it only for `indeterminate` and `not_found`. It does not call it for a clear approval or a clear denial. An early request inside the 90-day buffer and a split equipment history are both `indeterminate`, so both are filed here, each with its own reason.
 
-Each call appends one ticket, including when the employee id is not on file, and returns a copy of that ticket with a new id (`ESC-1`, `ESC-2`, and so on). `request` is the original request text. `reason` is why it was escalated, taken from the tool results. A second call creates a second ticket.
+Each call appends one ticket, including when the employee id is not on file, and returns a copy of that ticket with a new id (`ESC-1`, `ESC-2`, and so on). The id counts tickets currently stored. After the list is cleared, the next id is `ESC-1` again. `request` is the original request text. `reason` is a required string: why it was escalated, taken from the eligibility `reason`. The tool does not accept a null reason, and it does not decide whether the case should be flagged. A second call creates a second ticket. `reset_escalations` clears the list and is not an MCP tool.
 
 ## Tool schemas
 
@@ -126,18 +131,18 @@ Looks up the person. Returns role, tenure, and the equipment on file.
 Input:
 
 ```json
-{ "employee_id": "E102" }
+{ "employee_id": "E202" }
 ```
 
 Found:
 
 ```json
 {
-  "employee_id": "E102",
+  "employee_id": "E202",
   "role": "standard",
-  "tenure_years": 4.2,
+  "tenure_years": 8.6,
   "equipment": [
-    { "item": "monitor", "issued_on": "2022-01-15" }
+    { "item": "monitor", "issued_on": "2023-08-01" }
   ]
 }
 ```
@@ -185,23 +190,23 @@ Returns whether this person and this item fall inside policy, plus the status th
 Input:
 
 ```json
-{ "employee_id": "E102", "item": "monitor" }
+{ "employee_id": "E202", "item": "monitor" }
 ```
 
-In policy:
+In policy. This is E202, at the cap, with a monitor whose refresh is already due. The `reason` is the sentence for that outcome. The role in the sentence is capitalized. The role in `facts` is the stored value.
 
 ```json
 {
-  "employee_id": "E102",
+  "employee_id": "E202",
   "item": "monitor",
   "within_policy": true,
   "status": "in_policy",
-  "reason": "Has 1 monitor issued 2022-01-15. Standard limit is 1 every 3 years. Refresh is due.",
+  "reason": "Has 1 monitor issued 2023-08-01. Standard limit is 1 every 3 years. Refresh is due.",
   "facts": {
     "role": "standard",
-    "tenure_years": 4.2,
+    "tenure_years": 8.6,
     "count_on_file": 1,
-    "newest_issued_on": "2022-01-15",
+    "newest_issued_on": "2023-08-01",
     "max_count": 1,
     "refresh_years": 3,
     "min_tenure_years": 0
@@ -211,7 +216,7 @@ In policy:
 
 Outside policy uses the same fields with `within_policy` false and `status` `out_of_policy`.
 
-Indeterminate and not-found use `within_policy` null, `status` `indeterminate` or `not_found`, a `reason`, and whatever `facts` were actually known. A missing employee has no role, tenure, or equipment facts.
+Indeterminate and not-found use `within_policy` null, `status` `indeterminate` or `not_found`, a `reason`, and whatever `facts` were actually known. A missing employee has no role, tenure, or equipment facts. Each outcome has one sentence. Those sentences are listed in `docs/implementation-decisions.md`.
 
 ### `flag_for_human_review(employee_id, request, reason)`
 
@@ -221,9 +226,9 @@ Input:
 
 ```json
 {
-  "employee_id": "E102",
-  "request": "I need a second monitor.",
-  "reason": "Item 'headset' is not in the catalog, so eligibility is indeterminate."
+  "employee_id": "E207",
+  "request": "I need a headset.",
+  "reason": "Item 'headset' is not in the catalog."
 }
 ```
 
@@ -232,8 +237,8 @@ Output:
 ```json
 {
   "escalation_id": "ESC-1",
-  "employee_id": "E102",
-  "request": "I need a second monitor.",
-  "reason": "Item 'headset' is not in the catalog, so eligibility is indeterminate."
+  "employee_id": "E207",
+  "request": "I need a headset.",
+  "reason": "Item 'headset' is not in the catalog."
 }
 ```

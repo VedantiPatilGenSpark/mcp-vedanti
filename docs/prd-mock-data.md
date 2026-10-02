@@ -1,14 +1,12 @@
 # PRD: mock data corpus
 
-Write only the mock data. Do not write tests, eligibility logic, tool wrappers, or the escalation store.
+`src/mcp_vedanti/data.py` holds these records and does not decide eligibility. Do not invent extra employees or change a date.
 
-The rules live in `requirements.md` and `docs/decisions.md`. This file names the exact records those rules will be tested against. `docs/prd-tests.md` asserts these same ids and outcomes. Do not invent extra employees or change a date.
+The rules live in `requirements.md` and `docs/decisions.md`. `docs/prd-tests.md` asserts these same ids and outcomes.
 
 ## File
 
-Create `src/mcp_vedanti/data.py` and nothing else.
-
-Export:
+`src/mcp_vedanti/data.py` exports:
 
 | Name | Value |
 |---|---|
@@ -59,4 +57,4 @@ There is no employee `E999`. That id is the missing-employee case, and it must s
 
 ## Done when
 
-`data.py` exports the names above, the three sheets match the table, and the eleven employees match the rows. The file contains no decision logic.
+`data.py` exports the names above, the three sheets match the table, and the eleven employees match the rows. The file contains no decision logic. That is the file as it stands.
