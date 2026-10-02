@@ -310,11 +310,21 @@ def check_request_eligibility(employee_id: str, item: str) -> dict:
     )
 
 
+escalations: list[dict] = []
+
+
 def flag_for_human_review(employee_id: str, request: str, reason: str) -> dict:
-    """Append one escalation ticket and return the stored copy."""
-    raise NotImplementedError
+    """Append one escalation ticket and return a copy of the stored record."""
+    record = {
+        "escalation_id": f"ESC-{len(escalations) + 1}",
+        "employee_id": employee_id,
+        "request": request,
+        "reason": reason,
+    }
+    escalations.append(record)
+    return dict(record)
 
 
 def reset_escalations() -> None:
     """Clear the in-memory escalation list."""
-    raise NotImplementedError
+    escalations.clear()

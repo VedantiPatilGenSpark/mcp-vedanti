@@ -2,7 +2,7 @@
 
 Running record of how `src/mcp_vedanti/equipment.py` is built. `docs/decisions.md` locks the product rules. This file records the choices made while implementing them. Add a section when a function lands. Do not edit the tests to match this file.
 
-`flag_for_human_review`, `reset_escalations`, and MCP registration are not recorded yet.
+MCP registration is not recorded yet.
 
 Data comes from `mcp_vedanti.data`. The sheets and the people are not copied into this module. Role and item arguments are stripped and lowercased, then matched exactly. Employee ids are not normalized.
 
@@ -60,3 +60,9 @@ The decision tree picks an outcome key. It does not build a sentence inline. `_O
 | `refresh_due` | Has {count_on_file} {item} issued {newest_issued_on}. {role_label} limit is {max_count} every {refresh_years} years. Refresh is due. |
 | `inside_buffer` | Refresh is not due. The request is inside the {early_request_days}-day early-request buffer. |
 | `too_soon` | Refresh is not due. The due date is more than {early_request_days} days away. |
+
+## `flag_for_human_review` and `reset_escalations`
+
+Tickets live in the module-level list `escalations`. Each call appends one record and returns a new dict with the same fields, so the caller cannot change the stored ticket by editing the return value. The id is `ESC-` plus the count of tickets currently in the list, starting at `ESC-1`. `reset_escalations` clears the list, so the next id is `ESC-1` again. The id is not a counter that keeps growing across resets.
+
+The record stores `employee_id`, `request`, and `reason` as they were passed. An unknown employee id is stored. The return value has no `status`. This function does not read `POLICY` or `EMPLOYEES`, and it does not change either one.
