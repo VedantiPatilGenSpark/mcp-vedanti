@@ -2,7 +2,7 @@
 
 Running record of how `src/mcp_vedanti/equipment.py` is built. `docs/decisions.md` locks the product rules. This file records the choices made while implementing them. Add a section when a function lands. Do not edit the tests to match this file.
 
-MCP registration is not recorded yet.
+The functions stay plain. `server.py` registers four of them as MCP tools and does not contain the rules.
 
 Data comes from `mcp_vedanti.data`. The sheets and the people are not copied into this module. Role and item arguments are stripped and lowercased, then matched exactly. Employee ids are not normalized.
 
@@ -66,3 +66,7 @@ The decision tree picks an outcome key. It does not build a sentence inline. `_O
 Tickets live in the module-level list `escalations`. Each call appends one record and returns a new dict with the same fields, so the caller cannot change the stored ticket by editing the return value. The id is `ESC-` plus the count of tickets currently in the list, starting at `ESC-1`. `reset_escalations` clears the list, so the next id is `ESC-1` again. The id is not a counter that keeps growing across resets.
 
 The record stores `employee_id`, `request`, and `reason` as they were passed. An unknown employee id is stored. The return value has no `status`. This function does not read `POLICY` or `EMPLOYEES`, and it does not change either one.
+
+## MCP registration
+
+`server.py` registers the four functions with `mcp.tool()`: `get_employee_info`, `get_policy_limits`, `check_request_eligibility`, and `flag_for_human_review`. The tool name, parameters, and docstring are the function's own. The throwaway `add` tool is gone. `reset_escalations` is not a tool. A missing or wrong-typed argument is rejected by the tool schema before the function runs.
