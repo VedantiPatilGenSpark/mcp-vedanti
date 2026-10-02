@@ -2,7 +2,7 @@
 
 import datetime
 
-from mcp_vedanti.data import AS_OF, EMPLOYEES
+from mcp_vedanti.data import AS_OF, EMPLOYEES, POLICY
 
 
 def _tenure_years(hire_date: str) -> float:
@@ -26,7 +26,14 @@ def get_employee_info(employee_id: str) -> dict:
 
 def get_policy_limits(role: str) -> dict:
     """Return the policy sheet for one role."""
-    raise NotImplementedError
+    normalized = role.strip().lower()
+    items = POLICY.get(normalized)
+    if items is None:
+        return {"role": normalized, "status": "not_found"}
+    return {
+        "role": normalized,
+        "items": [dict(row) for row in items],
+    }
 
 
 def check_request_eligibility(employee_id: str, item: str) -> dict:
