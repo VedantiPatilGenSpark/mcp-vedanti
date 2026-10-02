@@ -34,7 +34,7 @@ Tenure is `(AS_OF - hire_date).days / 365.25`, rounded to one decimal. Return `t
 
 `get_employee_info` and `get_policy_limits` return a `status: not_found` dict for an unknown id or role. They do not raise.
 
-`check_request_eligibility` follows the order in `docs/prd-tests.md`. At `max_count`, split history is decided before the 90-day buffer. Under the cap, a missing issue date does not escalate. `within_policy` is `None` for `indeterminate` and `not_found`.
+`check_request_eligibility` follows the order in `docs/prd-tests.md`. At `max_count`, split history is decided before the 90-day buffer. Under the cap, a missing issue date does not escalate. At the cap, a unit of that item with no `issued_on` is `indeterminate`. The seed data has no such unit. That branch is a guard so a blank date is not turned into a guessed due date. `within_policy` is `None` for `indeterminate` and `not_found`.
 
 The escalation store is a list in this module. `flag_for_human_review` appends one record and returns that record. Ids are `ESC-1`, then `ESC-2`, counting only what is currently stored. `reset_escalations` clears the list. An unknown employee id is still stored. This function does not read policy and does not change `EMPLOYEES`.
 

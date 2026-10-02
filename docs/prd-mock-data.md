@@ -39,7 +39,7 @@ Store items in that order. Role and item strings are already lowercase.
 
 Tenure below is what `get_employee_info` must later return for `AS_OF`. It is listed here so the other briefs share one number. Do not store `tenure_years` on the record. Store `hire_date` only.
 
-Equipment is one object per unit: `{"item": "...", "issued_on": "YYYY-MM-DD"}`. A missing issue date is `"issued_on": None`.
+Equipment is one object per unit: `{"item": "...", "issued_on": "YYYY-MM-DD"}`. Every stored issue date is a real date. The seed data does not contain a blank `issued_on`.
 
 | Id | Role | Hire date | Tenure years | Equipment | Why this record exists |
 |---|---|---|---|---|---|
@@ -48,7 +48,6 @@ Equipment is one object per unit: `{"item": "...", "issued_on": "YYYY-MM-DD"}`. 
 | E203 | standard | 2018-03-01 | 8.6 | one monitor, 2024-01-15 | Due date 2027-01-15 is 106 days after the as-of date. |
 | E204 | standard | 2018-03-01 | 8.6 | none | Dock is a catalog item and is not on the standard sheet. |
 | E205 | standard | 2026-04-01 | 0.5 | none | Tenure is under the standard laptop gate of 1 year. Monitor has no tenure gate. |
-| E206 | standard | 2018-03-01 | 8.6 | one monitor, `issued_on` None | At the cap of 1, the replacement date cannot be computed. |
 | E207 | standard | 2018-03-01 | 8.6 | none | Used with item `headset`, which is not in the catalog. |
 | E208 | standard | 2018-03-01 | 8.6 | monitors issued 2020-01-01 and 2021-06-01 | Two monitors is already over the standard cap of 1. Both dates are present. |
 | E209 | contractor | 2018-03-01 | 8.6 | one monitor, 2022-01-15 | The person is on file. The role has no sheet. |
@@ -60,4 +59,4 @@ There is no employee `E999`. That id is the missing-employee case, and it must s
 
 ## Done when
 
-`data.py` exports the names above, the three sheets match the table, and the twelve employees match the rows. The file contains no decision logic.
+`data.py` exports the names above, the three sheets match the table, and the eleven employees match the rows. The file contains no decision logic.

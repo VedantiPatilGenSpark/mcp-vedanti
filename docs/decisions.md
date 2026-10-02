@@ -35,7 +35,6 @@ Tenure is computed from `hire_date` against the fixed as-of date `2026-10-01`. `
 - Indeterminate because the person is at `max_count` and the oldest unit is already due while the newest is not.
 - Out of policy because the item is not on that role's sheet.
 - Out of policy because tenure is below `min_tenure_years`.
-- Indeterminate because an issue date is missing.
 - Indeterminate because the item is not in the catalog (`headset`).
 - Indeterminate because the count on file is already over `max_count`.
 - Indeterminate because the employee exists but their role has no policy sheet. That fixture role is `contractor`. It is stored on the employee and is not one of `standard`, `manager`, or `director`. `get_policy_limits("contractor")` is not-found. Eligibility for that employee is indeterminate.
@@ -135,7 +134,8 @@ A tenure shortfall is `out_of_policy` and is not softened by the buffer. One uni
 | Item is known but not on this role's list | `false` | `out_of_policy` |
 | Count is at `max_count` and the due date is more than 90 days away | `false` | `out_of_policy` |
 | Tenure is below `min_tenure_years` | `false` | `out_of_policy` |
-| An issue date is missing, the item is unknown, or the count is already over `max_count` | `null` | `indeterminate` |
+| The item is unknown, or the count is already over `max_count` | `null` | `indeterminate` |
+| At `max_count`, and a unit of that item has no issue date | `null` | `indeterminate` |
 | At `max_count`, oldest unit is due, newest unit is not | `null` | `indeterminate` |
 | At `max_count`, and the as-of date is inside the 90 days before the due date | `null` | `indeterminate` |
 | Employee exists, and their role has no policy sheet | `null` | `indeterminate` |

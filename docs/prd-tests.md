@@ -53,7 +53,8 @@ Assert the exports from `docs/prd-mock-data.md`:
 - Catalog items are monitor, laptop, and dock, and do not include headset.
 - Policy roles are standard, manager, and director, and do not include contractor.
 - The three sheets match the `max_count` / `refresh_years` / `min_tenure_years` table in that PRD, including the missing standard dock row.
-- The employee ids are exactly E201 through E212.
+- The employee ids are exactly E201 through E205 and E207 through E212. There is no E206.
+- Every stored `issued_on` is a non-empty date string.
 - Each employee's role, hire date, and equipment match that table.
 - No `tenure_years` field is stored on an employee.
 - `E999` is not a key.
@@ -63,7 +64,6 @@ Assert the exports from `docs/prd-mock-data.md`:
 - E202 returns role `standard`, `tenure_years` `8.6`, and one monitor issued `2023-08-01`. The result has no `hire_date` and no `status`.
 - E205 returns `tenure_years` `0.5`.
 - E212 returns role `director`, `tenure_years` `10.4`, and an empty equipment list.
-- E206 returns the monitor with `issued_on` `None`.
 - `E999` returns `{"employee_id": "E999", "status": "not_found"}` and does not raise.
 - `"e202"` returns not-found. Ids are not lowercased.
 
@@ -89,7 +89,7 @@ One test per row. Assert `status`, `within_policy`, and the facts or reason frag
 | E204, dock | `out_of_policy`, false | Dock is absent from the standard sheet. |
 | E205, laptop | `out_of_policy`, false | Tenure 0.5, minimum 1. |
 | E205, monitor | `in_policy`, true | Same person. Monitor minimum is 0 and the count is 0. |
-| E206, monitor | `indeterminate`, None | Issue date is missing. |
+| A temporary standard employee at the monitor cap, inserted by the test and removed before the test ends, with `issued_on` None | `indeterminate`, None | Issue date is missing. This person is not part of the seed corpus. |
 | E207, headset | `indeterminate`, None | Headset is not in the catalog. |
 | E208, monitor | `indeterminate`, None | Count 2 is over the max of 1. |
 | E209, monitor | `indeterminate`, None | Contractor has no policy sheet. |
