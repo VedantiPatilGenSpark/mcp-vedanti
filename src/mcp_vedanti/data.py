@@ -64,14 +64,6 @@ EMPLOYEES = {
         "hire_date": "2026-04-01",
         "equipment": [],
     },
-    "E206": {
-        "employee_id": "E206",
-        "role": "standard",
-        "hire_date": "2018-03-01",
-        "equipment": [
-            {"item": "monitor", "issued_on": None},
-        ],
-    },
     "E207": {
         "employee_id": "E207",
         "role": "standard",
