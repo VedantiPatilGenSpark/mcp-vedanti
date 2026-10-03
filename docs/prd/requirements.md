@@ -216,7 +216,7 @@ In policy. This is E202, at the cap, with a monitor whose refresh is already due
 
 Outside policy uses the same fields with `within_policy` false and `status` `out_of_policy`.
 
-Indeterminate and not-found use `within_policy` null, `status` `indeterminate` or `not_found`, a `reason`, and whatever `facts` were actually known. A missing employee has no role, tenure, or equipment facts. Each outcome has one sentence. Those sentences are listed in `docs/implementation-decisions.md`.
+Indeterminate and not-found use `within_policy` null, `status` `indeterminate` or `not_found`, a `reason`, and whatever `facts` were actually known. A missing employee has no role, tenure, or equipment facts. Each outcome has one sentence. Those sentences are listed in `docs/server.md`.
 
 ### `flag_for_human_review(employee_id, request, reason)`
 

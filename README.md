@@ -27,6 +27,7 @@ src/mcp_vedanti/host/            Host. Model, MCP client, and request loop.
 src/mcp_vedanti/host/queries.json
                                  Saved requests and the expected decision.
 tests/                           Server tests and host tests. No model required.
+docs/prd/                     Server requirements, mock data, and test contract.
 docs/host-queries.md             What each saved request is checking.
 ```
 
@@ -112,7 +113,8 @@ The container installs Python 3.12 and the requirements. It does not install thi
 
 ## Read next
 
-- `requirements.md` — eligibility rules and the four statuses
-- `docs/implementation-decisions.md` — the check order and the reason sentences
+- `docs/prd/requirements.md` — eligibility rules and the four statuses
+- `docs/server.md` — the check order and the reason sentences
+- `docs/corpus.md` — why each employee record is in the mock data
 - `docs/host-queries.md` — each saved request and why it approves, denies, or escalates
 - `docs/v2-improvements.md` — cases pulled out of the current query set

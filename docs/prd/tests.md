@@ -2,7 +2,7 @@
 
 These tests are the contract for the server functions. They were written before the functions existed. The functions now pass them. Do not weaken a test to match a later change in the server.
 
-The behavior under test is `requirements.md`. The records under test are `docs/prd-mock-data.md`. Use those employee ids, dates, and tenure numbers. Do not add a person, and do not compute an expected status by calling the function under test.
+The behavior under test is `docs/prd/requirements.md`. The records under test are `docs/prd/mock-data.md`. Use those employee ids, dates, and tenure numbers. Do not add a person, and do not compute an expected status by calling the function under test.
 
 Plain functions only. Do not open an MCP client or a running server.
 
@@ -45,7 +45,7 @@ Role and item arguments are stripped and lowercased before the catalog match. Em
 
 ## `tests/test_corpus.py`
 
-Assert the exports from `docs/prd-mock-data.md`:
+Assert the exports from `docs/prd/mock-data.md`:
 
 - `AS_OF` is 2026-10-01 and `EARLY_REQUEST_DAYS` is 90.
 - Catalog items are monitor, laptop, and dock, and do not include headset.
@@ -110,4 +110,4 @@ The test file does not approve, deny, or decide who should be flagged. It only c
 
 ## Done when
 
-The five test modules exist, every row above has a test, and those tests pass against `data.py` and `equipment.py`. Corpus tests assert the records in `docs/prd-mock-data.md`. The function tests do not open an MCP client.
+The five test modules exist, every row above has a test, and those tests pass against `data.py` and `equipment.py`. Corpus tests assert the records in `docs/prd/mock-data.md`. The function tests do not open an MCP client.

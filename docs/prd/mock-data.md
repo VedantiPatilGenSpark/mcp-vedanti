@@ -2,7 +2,7 @@
 
 `src/mcp_vedanti/data.py` holds these records and does not decide eligibility. Do not invent extra employees or change a date.
 
-The rules live in `requirements.md` and `docs/decisions.md`. `docs/prd-tests.md` asserts these same ids and outcomes.
+The rules live in `docs/prd/requirements.md`. `docs/prd/tests.md` asserts these same ids and outcomes.
 
 ## File
 
