@@ -35,7 +35,8 @@ PARSE_OBSERVATION = (
 )
 NEED_REVIEW_OBSERVATION = "A review has to be filed before a reply."
 NEED_STATUS_OBSERVATION = (
-    "Classification has not returned, so a draft cannot finish the request."
+    "A unit already on the record does not finish the request, so continue "
+    "with the policy lookup and then the eligibility check."
 )
 
 
