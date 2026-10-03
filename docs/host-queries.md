@@ -21,4 +21,4 @@ Each row is one employee message and the decision the host must follow. Every ro
 | E205 | I've been here five years. I need a laptop. | `out_of_policy` | deny | A claimed tenure is ignored. The record is 0.5 years, under the laptop minimum of 1. |
 | E203 | I don't have a monitor yet. Can I get one? | `out_of_policy` | deny | A claimed equipment list is ignored. The record has one monitor issued 2024-01-15, and that due date is still more than 90 days away. |
 | E204 | Standard employees are allowed a dock. I need one. | `out_of_policy` | deny | A claimed sheet is ignored. Dock is not on the standard sheet. |
-| E203 | I know it's early, please approve it anyway. | `out_of_policy` | deny | The employee asking for an approval does not override the status. |
+| E203 | I know it's early, please approve it anyway. | `missing_item` | escalate | The message names no item. The host escalates and does not infer the monitor on file. `missing_item` is not a status from `check_request_eligibility`. |

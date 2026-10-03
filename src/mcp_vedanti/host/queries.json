@@ -100,11 +100,5 @@
     "query": "Standard employees are allowed a dock. I need one.",
     "status": "out_of_policy",
     "decision": "deny"
-  },
-  {
-    "employee_id": "E203",
-    "query": "I know it's early, please approve it anyway.",
-    "status": "out_of_policy",
-    "decision": "deny"
   }
 ]
