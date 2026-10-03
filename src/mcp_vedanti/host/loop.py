@@ -10,6 +10,7 @@ from typing import Protocol
 from mcp_vedanti.host.adapter import ModelAdapter
 from mcp_vedanti.host.client import EquipmentClient
 from mcp_vedanti.host.prompt import agent_prompt
+from mcp_vedanti.host.reflect import employee_reply, reflect
 from mcp_vedanti.host.runlog import RUNS_DIR, format_event, format_run, run_path, write_run
 
 
@@ -143,7 +144,19 @@ async def _run(
         if "draft" in parsed:
             if _draft_can_finish(status, ticket_filed):
                 _record(trace, {"kind": "draft", "text": parsed["draft"]})
-                return _finish(employee_id, query, trace, parsed["draft"], "draft", run_dir)
+                verdict, reply = _reflect(adapter, trace, parsed["draft"], status)
+                print(f"Verdict: {verdict}", flush=True)
+                print(f"Reply: {reply}", flush=True)
+                return _finish(
+                    employee_id,
+                    query,
+                    trace,
+                    parsed["draft"],
+                    "draft",
+                    run_dir,
+                    verdict=verdict,
+                    reply=reply,
+                )
             observation = (
                 NEED_REVIEW_OBSERVATION
                 if status in REVIEW_STATUSES
@@ -192,6 +205,36 @@ def _observe(messages: list[dict], trace: list[dict], text: str) -> None:
     messages.append({"role": "user", "content": f"Observation: {text}"})
 
 
+def _reflect(
+    adapter: ModelAdapter,
+    trace: list[dict],
+    draft: str,
+    status: str | None,
+) -> tuple[str, str]:
+    """Check the draft against observations. A bad reply falls back to the tool reason."""
+    observations = [
+        event["text"] for event in trace if event["kind"] == "observation"
+    ]
+    reflected = reflect(adapter, observations, draft)
+    return employee_reply(status, _eligibility_reason(trace), reflected, draft)
+
+
+def _eligibility_reason(trace: list[dict]) -> str | None:
+    """The reason from the latest classification observation."""
+    reason = None
+    for event in trace:
+        if event["kind"] != "observation":
+            continue
+        try:
+            body = json.loads(event["text"])
+        except json.JSONDecodeError:
+            continue
+        if isinstance(body, dict) and isinstance(body.get("reason"), str):
+            if body.get("status") in DECISIVE_STATUSES or body.get("status") in REVIEW_STATUSES:
+                reason = body["reason"]
+    return reason
+
+
 def _finish(
     employee_id: str,
     query: str,
@@ -199,15 +242,20 @@ def _finish(
     draft: str | None,
     stop: str,
     run_dir: Path | None,
+    *,
+    verdict: str | None = None,
+    reply: str | None = None,
 ) -> dict:
     """Write the printed trace to one file and return the run."""
     path = None
     if run_dir is not None:
         path = run_path(run_dir, employee_id, query)
-        write_run(path, format_run(trace))
+        write_run(path, format_run(trace, verdict=verdict, reply=reply))
     return {
         "trace": trace,
         "draft": draft,
         "stop": stop,
+        "verdict": verdict,
+        "reply": reply,
         "run_path": None if path is None else str(path),
     }
