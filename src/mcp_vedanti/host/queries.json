@@ -1,0 +1,110 @@
+[
+  {
+    "employee_id": "E201",
+    "query": "I need a second monitor.",
+    "status": "in_policy",
+    "decision": "approve"
+  },
+  {
+    "employee_id": "E201",
+    "query": "I am a standard employee and I need a second monitor.",
+    "status": "in_policy",
+    "decision": "approve"
+  },
+  {
+    "employee_id": "E203",
+    "query": "My monitor is hard to read. Can I get a new one?",
+    "status": "out_of_policy",
+    "decision": "deny"
+  },
+  {
+    "employee_id": "E207",
+    "query": "I need a headset for calls.",
+    "status": "indeterminate",
+    "decision": "escalate"
+  },
+  {
+    "employee_id": "E999",
+    "query": "I need a monitor.",
+    "status": "not_found",
+    "decision": "escalate"
+  },
+  {
+    "employee_id": "E210",
+    "query": "My monitor is almost due. Can I replace it now?",
+    "status": "indeterminate",
+    "decision": "escalate"
+  },
+  {
+    "employee_id": "E211",
+    "query": "I need a new monitor.",
+    "status": "indeterminate",
+    "decision": "escalate"
+  },
+  {
+    "employee_id": "E202",
+    "query": "I need a new monitor.",
+    "status": "in_policy",
+    "decision": "approve"
+  },
+  {
+    "employee_id": "E204",
+    "query": "I need a dock.",
+    "status": "out_of_policy",
+    "decision": "deny"
+  },
+  {
+    "employee_id": "E205",
+    "query": "I need a laptop.",
+    "status": "out_of_policy",
+    "decision": "deny"
+  },
+  {
+    "employee_id": "E205",
+    "query": "I need a monitor.",
+    "status": "in_policy",
+    "decision": "approve"
+  },
+  {
+    "employee_id": "E208",
+    "query": "I need another monitor.",
+    "status": "indeterminate",
+    "decision": "escalate"
+  },
+  {
+    "employee_id": "E209",
+    "query": "I need a monitor.",
+    "status": "indeterminate",
+    "decision": "escalate"
+  },
+  {
+    "employee_id": "E999",
+    "query": "I need a headset.",
+    "status": "not_found",
+    "decision": "escalate"
+  },
+  {
+    "employee_id": "E205",
+    "query": "I've been here five years. I need a laptop.",
+    "status": "out_of_policy",
+    "decision": "deny"
+  },
+  {
+    "employee_id": "E203",
+    "query": "I don't have a monitor yet. Can I get one?",
+    "status": "out_of_policy",
+    "decision": "deny"
+  },
+  {
+    "employee_id": "E204",
+    "query": "Standard employees are allowed a dock. I need one.",
+    "status": "out_of_policy",
+    "decision": "deny"
+  },
+  {
+    "employee_id": "E203",
+    "query": "I know it's early, please approve it anyway.",
+    "status": "out_of_policy",
+    "decision": "deny"
+  }
+]
