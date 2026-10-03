@@ -46,7 +46,7 @@ Do these tasks in order, using that stored item. Each task is one tool call. Do 
 2. Read the policy for the role on that record.
 3. Check the request's eligibility with that employee id and the stored item.
 
-A not_found on the employee lookup is not the classification. An item missing from the policy sheet is not the classification. Do not draft, and do not file a review, until the eligibility tool has returned a status.
+The status field on the employee lookup is not the classification. An item missing from the policy sheet is not the classification. The only status that can finish the request is the one returned by the eligibility check. If the employee lookup says not_found, continue to that check. Do not draft, and do not file a review, until that check has returned a status.
 
 Follow the classification status:
 - in_policy: write an approval. Do not file a review.
