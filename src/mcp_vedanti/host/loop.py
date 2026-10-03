@@ -4,11 +4,13 @@ One model call per step. The transcript grows with each thought, action, and obs
 """
 
 import json
+from pathlib import Path
 from typing import Protocol
 
 from mcp_vedanti.host.adapter import ModelAdapter
 from mcp_vedanti.host.client import EquipmentClient
 from mcp_vedanti.host.prompt import agent_prompt
+from mcp_vedanti.host.runlog import RUNS_DIR, format_event, format_run, run_path, write_run
 
 
 class ToolCaller(Protocol):
@@ -98,12 +100,15 @@ async def run_request(
     *,
     client: ToolCaller | None = None,
     step_limit: int = STEP_LIMIT,
+    run_dir: Path | None = RUNS_DIR,
 ) -> dict:
-    """Run one request. Returns the trace and the draft, if the loop finished."""
+    """Run one request. Prints the trace and writes the same text to one file."""
     if client is None:
         async with EquipmentClient() as connected:
-            return await _run(employee_id, query, adapter, connected, step_limit)
-    return await _run(employee_id, query, adapter, client, step_limit)
+            return await _run(
+                employee_id, query, adapter, connected, step_limit, run_dir
+            )
+    return await _run(employee_id, query, adapter, client, step_limit, run_dir)
 
 
 async def _run(
@@ -112,6 +117,7 @@ async def _run(
     adapter: ModelAdapter,
     client: ToolCaller,
     step_limit: int,
+    run_dir: Path | None,
 ) -> dict:
     tools = await client.list_tools()
     messages = [
@@ -133,11 +139,11 @@ async def _run(
             _observe(messages, trace, PARSE_OBSERVATION)
             continue
 
-        trace.append({"kind": "thought", "text": parsed["thought"]})
+        _record(trace, {"kind": "thought", "text": parsed["thought"]})
         if "draft" in parsed:
             if _draft_can_finish(status, ticket_filed):
-                trace.append({"kind": "draft", "text": parsed["draft"]})
-                return {"trace": trace, "draft": parsed["draft"], "stop": "draft"}
+                _record(trace, {"kind": "draft", "text": parsed["draft"]})
+                return _finish(employee_id, query, trace, parsed["draft"], "draft", run_dir)
             observation = (
                 NEED_REVIEW_OBSERVATION
                 if status in REVIEW_STATUSES
@@ -148,7 +154,7 @@ async def _run(
 
         tool = parsed["tool"]
         arguments = parsed["arguments"]
-        trace.append({"kind": "action", "tool": tool, "arguments": arguments})
+        _record(trace, {"kind": "action", "tool": tool, "arguments": arguments})
         if tool == FLAG_TOOL and status not in REVIEW_STATUSES:
             _observe(messages, trace, _flag_blocked_observation(status))
             continue
@@ -164,7 +170,7 @@ async def _run(
         elif tool == FLAG_TOOL:
             ticket_filed = True
 
-    return {"trace": trace, "draft": None, "stop": "step_limit"}
+    return _finish(employee_id, query, trace, None, "step_limit", run_dir)
 
 
 def _draft_can_finish(status: str | None, ticket_filed: bool) -> bool:
@@ -174,7 +180,34 @@ def _draft_can_finish(status: str | None, ticket_filed: bool) -> bool:
     return status in REVIEW_STATUSES and ticket_filed
 
 
+def _record(trace: list[dict], event: dict) -> None:
+    """Store one trace event and print it."""
+    trace.append(event)
+    print(format_event(event), flush=True)
+
+
 def _observe(messages: list[dict], trace: list[dict], text: str) -> None:
     """Append one observation to the transcript and the trace."""
-    trace.append({"kind": "observation", "text": text})
+    _record(trace, {"kind": "observation", "text": text})
     messages.append({"role": "user", "content": f"Observation: {text}"})
+
+
+def _finish(
+    employee_id: str,
+    query: str,
+    trace: list[dict],
+    draft: str | None,
+    stop: str,
+    run_dir: Path | None,
+) -> dict:
+    """Write the printed trace to one file and return the run."""
+    path = None
+    if run_dir is not None:
+        path = run_path(run_dir, employee_id, query)
+        write_run(path, format_run(trace))
+    return {
+        "trace": trace,
+        "draft": draft,
+        "stop": stop,
+        "run_path": None if path is None else str(path),
+    }
