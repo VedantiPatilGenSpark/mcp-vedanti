@@ -1,5 +1,6 @@
 {
   "model": "qwen3:8b",
   "base_url": "http://host.docker.internal:11434",
-  "think": false
+  "think": false,
+  "temperature": 0
 }

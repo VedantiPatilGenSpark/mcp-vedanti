@@ -24,12 +24,6 @@
     "decision": "escalate"
   },
   {
-    "employee_id": "E999",
-    "query": "I need a monitor.",
-    "status": "not_found",
-    "decision": "escalate"
-  },
-  {
     "employee_id": "E210",
     "query": "My monitor is almost due. Can I replace it now?",
     "status": "indeterminate",
@@ -75,12 +69,6 @@
     "employee_id": "E209",
     "query": "I need a monitor.",
     "status": "indeterminate",
-    "decision": "escalate"
-  },
-  {
-    "employee_id": "E999",
-    "query": "I need a headset.",
-    "status": "not_found",
     "decision": "escalate"
   },
   {

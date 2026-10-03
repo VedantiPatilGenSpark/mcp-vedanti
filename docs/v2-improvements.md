@@ -13,3 +13,15 @@ The message does not name a piece of equipment. E203 has one monitor on file. Th
 The host files a human review and does not look up the employee, read the policy, or classify. `request` is the original message. `reason` is that the request does not name an item. The draft says the request was escalated.
 
 The employee's plea to approve does not change that.
+
+## An employee id that is not on file
+
+Examples: E999, "I need a monitor." E999, "I need a headset."
+
+`E999` is not in the employee file. `get_employee_info` returns `status: not_found`. That field is the lookup result. It is not the classification.
+
+The host still checks eligibility with that employee id and the item named in the message. Eligibility returns `not_found`, including when the item is a headset. The missing person is decided before the unknown item. The reason is that no employee with that id is on file.
+
+The host then files a human review. `request` is the original message. `reason` is that eligibility sentence. The draft says the request was escalated. This is not a denial.
+
+The v1 query set does not include these rows. The server tests for them stay.

@@ -16,10 +16,11 @@ class ModelAdapter(Protocol):
 class OllamaAdapter:
     """Call a local Ollama chat model and return the reply text."""
 
-    def __init__(self, model: str, base_url: str, *, think: bool) -> None:
+    def __init__(self, model: str, base_url: str, *, think: bool, temperature: float) -> None:
         self.model = model
         self.base_url = base_url.rstrip("/")
         self.think = think
+        self.temperature = temperature
 
     def complete(self, messages: list[dict[str, str]]) -> str:
         """Post one chat request and return message content."""
@@ -28,6 +29,7 @@ class OllamaAdapter:
             "messages": messages,
             "stream": False,
             "think": self.think,
+            "options": {"temperature": self.temperature},
         }
         request = urllib.request.Request(
             f"{self.base_url}/api/chat",
@@ -53,4 +55,5 @@ def load_adapter(path: Path | None = None) -> OllamaAdapter:
         model=config["model"],
         base_url=config["base_url"],
         think=config["think"],
+        temperature=config["temperature"],
     )
