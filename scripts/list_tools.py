@@ -1,3 +1,5 @@
+import json
+
 import anyio
 from mcp import Client
 
@@ -7,6 +9,6 @@ async def main() -> None:
         for tool in listed.tools:
             print(tool.name)
             print(tool.description)
-            print(tool.input_schema)
+            print(json.dumps(dict(tool.input_schema), indent=2))
 
 anyio.run(main)
