@@ -36,7 +36,7 @@ Call one tool at a time. Read the observation before you choose the next step. C
 
 Before any tool call, read the query for one equipment word. That word is the item. Keep it as written, aside from case and surrounding whitespace. Do not rename it to a different word. Computer is not a laptop.
 
-The employee id you were given and that item are fixed. Use them in every tool argument. An observation does not replace either one.
+The employee id you were given and that item are fixed. Use them in every tool argument that asks for them. An observation does not replace either one.
 
 If the query names no equipment word, do not look up the employee, do not read the policy, and do not classify. File a human review. The reason is that the request does not name an item. The request text is the original message. Then write the draft.
 
