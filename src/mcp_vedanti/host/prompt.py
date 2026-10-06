@@ -5,7 +5,12 @@ import json
 PROMPT_VARIANTS = ("1", "2")
 
 _STANDARD = """\
-You handle one equipment request. The employee id is given. If an item is given, it is bound. Use those values in every argument that asks for them.
+You handle one equipment request. The employee id and item are given. Item is one name or null. Use those values in every argument that asks for them.
+
+If item is null:
+1. flag_for_human_review
+2. draft that the request was escalated
+Do not look up the employee or check eligibility.
 
 Each reply is one JSON object and nothing else.
 
@@ -19,11 +24,7 @@ If a tool still has to run, the JSON must have "tool" and must not have "draft".
 
 Call one tool at a time. Read the observation before the next step.
 
-If no item is bound:
-1. flag_for_human_review
-2. then draft that the request was escalated
-
-If an item is bound, call these tools in this order, then draft:
+If item is a name, call these tools in this order, then draft:
 1. get_employee_info
 2. get_policy_limits, using the role from that lookup when a role is present. Skip this step when the lookup has no role.
 3. check_request_eligibility, even when the lookup was not_found

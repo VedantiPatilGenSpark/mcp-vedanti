@@ -267,11 +267,9 @@ def _bound_item(adapter: ModelAdapter, employee_id: str, query: str) -> str | No
 
 
 def _react_user(employee_id: str, query: str, bound_item: str | None) -> str:
-    """The ReAct user message. The item is included only when extract bound one."""
-    text = f"Employee id: {employee_id}\nQuery: {query}"
-    if bound_item is not None:
-        text += f"\nItem: {bound_item}"
-    return text
+    """The ReAct user message. Item is always present: a name, or null."""
+    item = bound_item if bound_item is not None else "null"
+    return f"Employee id: {employee_id}\nQuery: {query}\nItem: {item}"
 
 
 def _item_arg(arguments: dict) -> str | None:

@@ -63,6 +63,13 @@ def test_prompt_names_the_standard_tool_order() -> None:
     assert _INSTRUCTIONS["1"] == _INSTRUCTIONS["2"]
 
 
+def test_prompt_routes_a_null_item_to_flag() -> None:
+    """ReAct always sees an item field. Null means flag, then draft."""
+    text = _INSTRUCTIONS["1"]
+    assert "item is null" in text.lower()
+    assert "flag_for_human_review" in text
+
+
 def test_prompt_requires_a_tool_object_until_the_sequence_is_done() -> None:
     """Blocked drafts come from emitting draft while a tool is still due."""
     text = _INSTRUCTIONS["1"]

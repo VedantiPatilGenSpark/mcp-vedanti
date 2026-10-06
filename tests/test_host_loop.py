@@ -433,6 +433,7 @@ def test_missing_item_allows_flag_without_eligibility() -> None:
         query="I know it's early, please approve it anyway.",
     )
 
+    assert "Item: null" in model.transcripts[1][1]["content"]
     assert tools.calls == ["flag_for_human_review"]
     assert result["reply"] == "The request was escalated."
 
@@ -463,6 +464,7 @@ def test_two_items_allows_flag_without_eligibility() -> None:
         query="I want a monitor and a laptop.",
     )
 
+    assert "Item: null" in model.transcripts[1][1]["content"]
     assert tools.calls == ["flag_for_human_review"]
     assert result["reply"] == "The request was escalated."
 
@@ -488,6 +490,7 @@ def test_unusable_extract_is_treated_as_no_item() -> None:
 
     result = _run(model, tools)
 
+    assert "Item: null" in model.transcripts[1][1]["content"]
     assert tools.calls == ["flag_for_human_review"]
     assert result["reply"] == "The request was escalated."
 
