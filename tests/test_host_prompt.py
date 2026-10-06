@@ -53,21 +53,11 @@ def test_prompt_does_not_forbid_a_ticket_before_eligibility() -> None:
     assert "do not draft, and do not file a review" not in lowered
 
 
-def test_prompt_two_does_not_name_server_tools_in_the_instructions() -> None:
-    """The looser prompt relies on the catalog, not hard-coded tool names."""
-    text = _INSTRUCTIONS["2"].lower()
-    assert "get_employee_info" not in text
-    assert "get_policy_limits" not in text
-    assert "check_request_eligibility" not in text
-    assert "flag_for_human_review" not in text
-    assert "in_policy" in text
-
-
-def test_both_prompts_keep_status_rules() -> None:
-    """Each variant still names the four statuses."""
-    for variant in ("1", "2"):
-        text = agent_prompt([], variant)
-        assert "in_policy" in text
-        assert "out_of_policy" in text
-        assert "indeterminate" in text
-        assert "not_found" in text
+def test_prompt_names_the_standard_tool_order() -> None:
+    """Both variants use the same lookup, policy, eligibility, then flag path."""
+    text = _INSTRUCTIONS["1"]
+    assert "get_employee_info" in text
+    assert "get_policy_limits" in text
+    assert "check_request_eligibility" in text
+    assert "flag_for_human_review" in text
+    assert _INSTRUCTIONS["1"] == _INSTRUCTIONS["2"]

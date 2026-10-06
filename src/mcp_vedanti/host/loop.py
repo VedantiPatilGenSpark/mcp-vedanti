@@ -37,10 +37,7 @@ PARSE_OBSERVATION = (
     "or a draft."
 )
 NEED_REVIEW_OBSERVATION = "A review has to be filed before a reply."
-NEED_STATUS_OBSERVATION = (
-    "A unit already on the record does not finish the request, so continue "
-    "with the policy lookup and then the eligibility check."
-)
+NEED_STATUS_OBSERVATION = "Call check_request_eligibility before drafting."
 ITEM_LOCKED_OBSERVATION = "The item is already bound. Use that item."
 NO_ITEM_ELIGIBILITY_OBSERVATION = (
     "No single item is bound, so eligibility is not allowed."
