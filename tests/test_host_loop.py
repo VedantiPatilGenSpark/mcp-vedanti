@@ -4,7 +4,7 @@ import asyncio
 import json
 
 from mcp_vedanti.host.extract import extract_prompt
-from mcp_vedanti.host.loop import run_request
+from mcp_vedanti.host.loop import STEP_LIMIT_REPLY, run_request
 
 
 CATALOG = [
@@ -662,3 +662,30 @@ def test_tool_employee_id_must_match() -> None:
         for event in result["trace"]
     )
     assert result["reply"] == "Your second monitor is approved."
+
+
+def test_step_limit_prints_an_employee_reply() -> None:
+    """A run that never drafts still leaves the employee a reply."""
+    model = ScriptedModel(
+        [
+            _extract(item="monitor"),
+            "not json",
+            "not json",
+        ]
+    )
+    tools = ScriptedTools([])
+
+    result = asyncio.run(
+        run_request(
+            "E201",
+            "I need a second monitor.",
+            model,
+            client=tools,
+            step_limit=2,
+            run_dir=None,
+        )
+    )
+
+    assert result["stop"] == "step_limit"
+    assert result["reply"] == STEP_LIMIT_REPLY
+    assert result["draft"] is None

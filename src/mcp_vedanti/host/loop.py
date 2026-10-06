@@ -50,6 +50,9 @@ NEED_POLICY_OBSERVATION = (
     "Read the policy for that employee's role before checking eligibility."
 )
 EMPLOYEE_LOCKED_OBSERVATION = "The employee id is already bound. Use that id."
+STEP_LIMIT_REPLY = (
+    "I could not finish this request. A person needs to review it."
+)
 
 
 def _flag_blocked_observation(status: str | None) -> str:
@@ -226,7 +229,16 @@ async def _run(
         elif tool == FLAG_TOOL:
             ticket_filed = True
 
-    return _finish(employee_id, query, trace, None, "step_limit", run_dir)
+    print(f"Reply: {STEP_LIMIT_REPLY}", flush=True)
+    return _finish(
+        employee_id,
+        query,
+        trace,
+        None,
+        "step_limit",
+        run_dir,
+        reply=STEP_LIMIT_REPLY,
+    )
 
 
 def _bound_item(adapter: ModelAdapter, employee_id: str, query: str) -> str | None:
