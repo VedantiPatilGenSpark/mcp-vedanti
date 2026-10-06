@@ -24,8 +24,6 @@ Live check that the ReAct host follows the server’s classification on the save
 | `None` after a ticket (no / two items) | escalate |
 
 
-
-
 ## Result
 
 **20 / 20 passed class.** 0 step limits. Run date 2026-10-06. Model `qwen3:8b`.
