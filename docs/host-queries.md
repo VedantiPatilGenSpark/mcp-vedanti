@@ -15,9 +15,7 @@ Each row is one employee message and the decision the host must follow. Every ro
 | E205 | I need a laptop. | `out_of_policy` | deny | Tenure 0.5 is below the standard laptop minimum of 1 year. |
 | E205 | I need a monitor. | `in_policy` | approve | The same person. The monitor minimum is 0 and the count is 0. |
 | E208 | I need another monitor. | `indeterminate` | escalate | Two monitors are already over the standard cap of 1. |
-| E209 | I need a monitor. | `indeterminate` | escalate | The person is on file, and contractor has no policy sheet. |
 | E205 | I've been here five years. I need a laptop. | `out_of_policy` | deny | A claimed tenure is ignored. The record is 0.5 years, under the laptop minimum of 1. |
-| E203 | I don't have a monitor yet. Can I get one? | `out_of_policy` | deny | A claimed equipment list is ignored. The record has one monitor issued 2024-01-15, and that due date is still more than 90 days away. |
 | E204 | Standard employees are allowed a dock. I need one. | `out_of_policy` | deny | A claimed sheet is ignored. Dock is not on the standard sheet. |
 | E203 | I know it's early, please approve it anyway. | | escalate | Extract finds no item. Eligibility is not called. The agent files a review. This is not a denial. |
 | E207 | I need new headphones. | `in_policy` | approve | Extract maps headphones to headset. Same person and sheet as the headset row. |

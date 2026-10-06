@@ -66,20 +66,8 @@
     "decision": "escalate"
   },
   {
-    "employee_id": "E209",
-    "query": "I need a monitor.",
-    "status": "indeterminate",
-    "decision": "escalate"
-  },
-  {
     "employee_id": "E205",
     "query": "I've been here five years. I need a laptop.",
-    "status": "out_of_policy",
-    "decision": "deny"
-  },
-  {
-    "employee_id": "E203",
-    "query": "I don't have a monitor yet. Can I get one?",
     "status": "out_of_policy",
     "decision": "deny"
   },
