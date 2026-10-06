@@ -53,21 +53,25 @@ def test_prompt_does_not_forbid_a_ticket_before_eligibility() -> None:
     assert "do not draft, and do not file a review" not in lowered
 
 
-def test_prompt_names_the_standard_tool_order() -> None:
-    """Both variants use the same lookup, policy, eligibility, then flag path."""
+def test_prompt_names_jobs_in_plain_english() -> None:
+    """Instructions describe jobs. Exact tool names come from the catalog only."""
     text = _INSTRUCTIONS["1"]
-    assert "get_employee_info" in text
-    assert "get_policy_limits" in text
-    assert "check_request_eligibility" in text
-    assert "flag_for_human_review" in text
+    assert "get the employee info" in text
+    assert "get the policy limits" in text
+    assert "check the request eligibility" in text
+    assert "flag for human review" in text
+    assert "get_employee_info" not in text
+    assert "get_policy_limits" not in text
+    assert "check_request_eligibility" not in text
+    assert "flag_for_human_review" not in text
     assert _INSTRUCTIONS["1"] == _INSTRUCTIONS["2"]
 
 
 def test_prompt_routes_a_null_item_to_flag() -> None:
     """ReAct always sees an item field. Null means flag, then draft."""
-    text = _INSTRUCTIONS["1"]
-    assert "item is null" in text.lower()
-    assert "flag_for_human_review" in text
+    text = _INSTRUCTIONS["1"].lower()
+    assert "item is null" in text
+    assert "flag for human review" in text
 
 
 def test_prompt_requires_a_tool_object_until_the_sequence_is_done() -> None:
@@ -75,4 +79,5 @@ def test_prompt_requires_a_tool_object_until_the_sequence_is_done() -> None:
     text = _INSTRUCTIONS["1"]
     assert 'must have "tool"' in text
     assert 'must not have "draft"' in text
-    assert "even when the lookup was not_found" in text
+    assert "even when the employee was not found" in text
+    assert "Never draft after employee info or policy limits alone." in text

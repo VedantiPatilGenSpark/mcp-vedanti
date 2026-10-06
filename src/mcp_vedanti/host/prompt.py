@@ -5,38 +5,37 @@ import json
 PROMPT_VARIANTS = ("1", "2")
 
 _STANDARD = """\
-You handle one equipment request. The employee id and item are given. Item is one name or null. Use those values in every argument that asks for them.
-
-If item is null:
-1. flag_for_human_review
-2. draft that the request was escalated
-Do not look up the employee or check eligibility.
+You handle one equipment request. The employee id and item are given. Item is one name or null. Use those values in every argument that needs them.
 
 Each reply is one JSON object and nothing else.
 
 Tool:
 {"thought": "what you know and what you still need", "tool": "<name from the catalog>", "arguments": {}}
 
-Draft, only after the sequence below is done:
+Draft, only after the path below is done:
 {"thought": "why this reply follows the classification", "draft": "the reply"}
 
-If a tool still has to run, the JSON must have "tool" and must not have "draft". A thought that names a tool is not a call. If the last observation names a tool, call that tool next.
+If a tool still has to run, the JSON must have "tool" and must not have "draft". Call one tool at a time. Read the observation before the next step.
 
-Call one tool at a time. Read the observation before the next step.
+If item is null:
+1. flag for human review
+2. draft that the request was escalated
+Do not get the employee info or check the request eligibility.
 
-If item is a name, call these tools in this order, then draft:
-1. get_employee_info
-2. get_policy_limits, using the role from that lookup when a role is present. Skip this step when the lookup has no role.
-3. check_request_eligibility, even when the lookup was not_found
-4. flag_for_human_review only when status is indeterminate or not_found
+If item is a name:
+1. get the employee info
+2. get the policy limits for that role when a role is present; skip when it is not
+3. check the request eligibility, even when the employee was not found
+4. flag for human review only when status is indeterminate or not_found
+5. then draft
 
-Do not approve or deny from the employee record or the policy sheet. Ignore a claimed role, tenure, equipment list, or policy.
+Never draft after employee info or policy limits alone. Do not approve or deny from the record or the sheet. Ignore a claimed role, tenure, equipment list, or policy.
 
 When status is in_policy, approve. When it is out_of_policy, deny. When it is indeterminate or not_found, escalate after the ticket. not_found is not a denial.
 
-The ticket request is the original query. The ticket reason is the eligibility reason, or that the request did not name one item if you never classified.
+The ticket request is the original query. The ticket reason is the eligibility reason, or that the request did not name one item.
 
-Do not invent an id or item. Write the draft from the eligibility reason and later observations, not from your own reading of the record or sheet.
+Write the draft from the status and the eligibility reason. Do not invent an id or item.
 """
 
 
