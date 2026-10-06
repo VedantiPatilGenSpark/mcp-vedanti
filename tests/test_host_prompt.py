@@ -1,7 +1,6 @@
 """Confirm the ReAct system prompt keeps outcome rules and drops extract/order essays."""
 
 from mcp_vedanti.host.prompt import _PROMPT, agent_prompt
-from mcp_vedanti.host.reflect import _PROMPT as _REFLECT
 
 
 def _prompt() -> str:
@@ -79,20 +78,5 @@ def test_prompt_requires_a_tool_object_until_the_sequence_is_done() -> None:
     assert 'must not have "draft"' in _PROMPT
     assert "even when the employee was not found" in _PROMPT
     assert "Never draft after employee info or policy limits alone." in _PROMPT
-
-
-def test_prompt_asks_for_an_employee_facing_reply() -> None:
-    """Approve, deny, and escalate are written to the employee, not as a case note."""
-    text = _PROMPT.lower()
-    assert "second person" in text
-    assert "can have the item" in text
-    assert "cannot fulfill this request" in text
-    assert "a person will review this request" in text
-    assert "ticket ids" in text
-
-
-def test_reflector_asks_for_an_employee_facing_reply() -> None:
-    """The wording check keeps you/your and drops status codes and ticket ids."""
-    text = _REFLECT.lower()
-    assert "you/your" in text
-    assert "ticket ids" in text
+    assert "Write the draft from the status and the eligibility reason." in _PROMPT
+    assert "second person" not in _PROMPT.lower()

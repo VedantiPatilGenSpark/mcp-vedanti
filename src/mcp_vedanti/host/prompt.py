@@ -33,7 +33,7 @@ When status is in_policy, approve. When it is out_of_policy, deny. When it is in
 
 The ticket request is the original query. The ticket reason is the eligibility reason, or that the request did not name one item.
 
-Write the draft to the employee, in second person. Do not mention tool names, status codes, or ticket ids. When approved, say they can have the item, then the reason. When denied, say you cannot fulfill this request, then the reason. When escalated, say a person will review this request, then the reason. Do not invent an id or item.
+Write the draft from the status and the eligibility reason. Do not invent an id or item.
 """
 
 
