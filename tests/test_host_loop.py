@@ -9,6 +9,16 @@ from mcp_vedanti.host.loop import run_request
 
 CATALOG = [
     {
+        "name": "get_employee_info",
+        "description": "Look up one employee.",
+        "input_schema": {},
+    },
+    {
+        "name": "get_policy_limits",
+        "description": "Read one role sheet.",
+        "input_schema": {},
+    },
+    {
         "name": "check_request_eligibility",
         "description": "Classify one employee and item.",
         "input_schema": {},
@@ -67,6 +77,35 @@ def _eligibility(status: str, reason: str) -> dict:
     }
 
 
+def _employee_found(employee_id: str = "E201", role: str = "manager") -> dict:
+    return {
+        "text": json.dumps(
+            {
+                "employee_id": employee_id,
+                "role": role,
+                "tenure_years": 7.3,
+                "equipment": [],
+            }
+        ),
+        "is_error": False,
+    }
+
+
+def _employee_missing(employee_id: str = "E999") -> dict:
+    return {
+        "text": json.dumps({"employee_id": employee_id, "status": "not_found"}),
+        "is_error": False,
+    }
+
+
+def _policy(role: str = "manager") -> dict:
+    return {"text": json.dumps({"role": role, "items": []}), "is_error": False}
+
+
+def _ticket() -> dict:
+    return {"text": json.dumps({"escalation_id": "ESC-1"}), "is_error": False}
+
+
 def _extract(*, item: str | None = None, items: list[str] | None = None) -> str:
     body: dict = {"thought": "Name the item."}
     if items is not None:
@@ -98,23 +137,38 @@ def test_tool_step_records_thought_action_and_observation() -> None:
     model = ScriptedModel(
         [
             _extract(item="monitor"),
+            _tool("get_employee_info", employee_id="E201"),
+            _tool("get_policy_limits", role="manager"),
             _tool("check_request_eligibility", employee_id="E201", item="monitor"),
             _draft("Your second monitor is approved."),
             _reflection("confirm", "Your second monitor is approved."),
         ]
     )
-    tools = ScriptedTools([_eligibility("in_policy", "Count is under the limit.")])
+    tools = ScriptedTools(
+        [
+            _employee_found(),
+            _policy(),
+            _eligibility("in_policy", "Count is under the limit."),
+        ]
+    )
 
     result = _run(model, tools)
 
-    assert tools.calls == ["check_request_eligibility"]
-    assert [event["kind"] for event in result["trace"][:3]] == [
-        "thought",
-        "action",
-        "observation",
+    assert tools.calls == [
+        "get_employee_info",
+        "get_policy_limits",
+        "check_request_eligibility",
     ]
-    assert result["trace"][1]["tool"] == "check_request_eligibility"
-    assert "under the limit" in result["trace"][2]["text"]
+    eligibility = [
+        event
+        for event in result["trace"]
+        if event["kind"] == "action" and event["tool"] == "check_request_eligibility"
+    ]
+    assert eligibility
+    assert any(
+        event["kind"] == "observation" and "under the limit" in event["text"]
+        for event in result["trace"]
+    )
 
 
 def test_rejected_argument_is_an_observation() -> None:
@@ -122,6 +176,8 @@ def test_rejected_argument_is_an_observation() -> None:
     model = ScriptedModel(
         [
             _extract(item="monitor"),
+            _tool("get_employee_info", employee_id="E201"),
+            _tool("get_policy_limits", role="manager"),
             _tool("check_request_eligibility", employee_id="E201", item="monitor"),
             _tool("check_request_eligibility", employee_id="E201", item="monitor"),
             _draft("Your second monitor is approved."),
@@ -130,6 +186,8 @@ def test_rejected_argument_is_an_observation() -> None:
     )
     tools = ScriptedTools(
         [
+            _employee_found(),
+            _policy(),
             {"text": "employee_id must be a string", "is_error": True},
             _eligibility("in_policy", "Count is under the limit."),
         ]
@@ -137,8 +195,16 @@ def test_rejected_argument_is_an_observation() -> None:
 
     result = _run(model, tools)
 
-    assert tools.calls == ["check_request_eligibility", "check_request_eligibility"]
-    assert result["trace"][2]["text"] == "employee_id must be a string"
+    assert tools.calls == [
+        "get_employee_info",
+        "get_policy_limits",
+        "check_request_eligibility",
+        "check_request_eligibility",
+    ]
+    assert any(
+        event["kind"] == "observation" and event["text"] == "employee_id must be a string"
+        for event in result["trace"]
+    )
     assert result["reply"] == "Your second monitor is approved."
 
 
@@ -147,17 +213,29 @@ def test_flag_is_blocked_when_status_is_in_policy() -> None:
     model = ScriptedModel(
         [
             _extract(item="monitor"),
+            _tool("get_employee_info", employee_id="E201"),
+            _tool("get_policy_limits", role="manager"),
             _tool("check_request_eligibility", employee_id="E201", item="monitor"),
             _tool("flag_for_human_review", employee_id="E201", request="x", reason="y"),
             _draft("Your second monitor is approved."),
             _reflection("confirm", "Your second monitor is approved."),
         ]
     )
-    tools = ScriptedTools([_eligibility("in_policy", "Count is under the limit.")])
+    tools = ScriptedTools(
+        [
+            _employee_found(),
+            _policy(),
+            _eligibility("in_policy", "Count is under the limit."),
+        ]
+    )
 
     result = _run(model, tools)
 
-    assert tools.calls == ["check_request_eligibility"]
+    assert tools.calls == [
+        "get_employee_info",
+        "get_policy_limits",
+        "check_request_eligibility",
+    ]
     assert any(
         event["kind"] == "observation" and "does not allow a ticket" in event["text"]
         for event in result["trace"]
@@ -169,6 +247,8 @@ def test_draft_is_held_until_a_ticket_exists() -> None:
     model = ScriptedModel(
         [
             _extract(item="headset"),
+            _tool("get_employee_info", employee_id="E207"),
+            _tool("get_policy_limits", role="standard"),
             _tool("check_request_eligibility", employee_id="E207", item="headset"),
             _draft("Approved."),
             _tool(
@@ -183,17 +263,21 @@ def test_draft_is_held_until_a_ticket_exists() -> None:
     )
     tools = ScriptedTools(
         [
+            _employee_found("E207", "standard"),
+            _policy("standard"),
             _eligibility("indeterminate", "Item 'headset' is not in the catalog."),
-            {
-                "text": json.dumps({"escalation_id": "ESC-1"}),
-                "is_error": False,
-            },
+            _ticket(),
         ]
     )
 
-    result = _run(model, tools)
+    result = _run(model, tools, employee_id="E207", query="I need a headset.")
 
-    assert tools.calls == ["check_request_eligibility", "flag_for_human_review"]
+    assert tools.calls == [
+        "get_employee_info",
+        "get_policy_limits",
+        "check_request_eligibility",
+        "flag_for_human_review",
+    ]
     assert any(
         event["kind"] == "observation" and "review has to be filed" in event["text"]
         for event in result["trace"]
@@ -208,12 +292,20 @@ def test_reflector_runs_on_observations_before_the_reply() -> None:
     model = ScriptedModel(
         [
             _extract(item="monitor"),
+            _tool("get_employee_info", employee_id="E201"),
+            _tool("get_policy_limits", role="manager"),
             _tool("check_request_eligibility", employee_id="E201", item="monitor"),
             _draft(draft),
             _reflection("confirm", "This text is ignored on confirm."),
         ]
     )
-    tools = ScriptedTools([_eligibility("in_policy", "Count is under the limit.")])
+    tools = ScriptedTools(
+        [
+            _employee_found(),
+            _policy(),
+            _eligibility("in_policy", "Count is under the limit."),
+        ]
+    )
 
     result = _run(model, tools)
 
@@ -232,12 +324,20 @@ def test_contradicting_reply_falls_back_to_the_tool_reason() -> None:
     model = ScriptedModel(
         [
             _extract(item="monitor"),
+            _tool("get_employee_info", employee_id="E201"),
+            _tool("get_policy_limits", role="manager"),
             _tool("check_request_eligibility", employee_id="E201", item="monitor"),
             _draft("Your second monitor is denied."),
             _reflection("confirm", "Your second monitor is denied."),
         ]
     )
-    tools = ScriptedTools([_eligibility("in_policy", "Count is under the limit.")])
+    tools = ScriptedTools(
+        [
+            _employee_found(),
+            _policy(),
+            _eligibility("in_policy", "Count is under the limit."),
+        ]
+    )
 
     result = _run(model, tools)
 
@@ -250,12 +350,20 @@ def test_extract_runs_before_react() -> None:
     model = ScriptedModel(
         [
             _extract(item="monitor"),
+            _tool("get_employee_info", employee_id="E201"),
+            _tool("get_policy_limits", role="manager"),
             _tool("check_request_eligibility", employee_id="E201", item="monitor"),
             _draft("Your second monitor is approved."),
             _reflection("confirm", "Your second monitor is approved."),
         ]
     )
-    tools = ScriptedTools([_eligibility("in_policy", "Count is under the limit.")])
+    tools = ScriptedTools(
+        [
+            _employee_found(),
+            _policy(),
+            _eligibility("in_policy", "Count is under the limit."),
+        ]
+    )
 
     result = _run(model, tools)
 
@@ -270,17 +378,29 @@ def test_tool_item_must_match_extract() -> None:
     model = ScriptedModel(
         [
             _extract(item="monitor"),
+            _tool("get_employee_info", employee_id="E201"),
+            _tool("get_policy_limits", role="manager"),
             _tool("check_request_eligibility", employee_id="E201", item="laptop"),
             _tool("check_request_eligibility", employee_id="E201", item="monitor"),
             _draft("Your second monitor is approved."),
             _reflection("confirm", "Your second monitor is approved."),
         ]
     )
-    tools = ScriptedTools([_eligibility("in_policy", "Count is under the limit.")])
+    tools = ScriptedTools(
+        [
+            _employee_found(),
+            _policy(),
+            _eligibility("in_policy", "Count is under the limit."),
+        ]
+    )
 
     result = _run(model, tools)
 
-    assert tools.calls == ["check_request_eligibility"]
+    assert tools.calls == [
+        "get_employee_info",
+        "get_policy_limits",
+        "check_request_eligibility",
+    ]
     assert any(
         event["kind"] == "observation" and "item" in event["text"].lower()
         for event in result["trace"]
@@ -370,3 +490,175 @@ def test_unusable_extract_is_treated_as_no_item() -> None:
 
     assert tools.calls == ["flag_for_human_review"]
     assert result["reply"] == "The request was escalated."
+
+
+def test_eligibility_is_blocked_before_employee_lookup() -> None:
+    """Eligibility does not reach the server until the employee has been looked up."""
+    model = ScriptedModel(
+        [
+            _extract(item="monitor"),
+            _tool("check_request_eligibility", employee_id="E201", item="monitor"),
+            _tool("get_employee_info", employee_id="E201"),
+            _tool("get_policy_limits", role="manager"),
+            _tool("check_request_eligibility", employee_id="E201", item="monitor"),
+            _draft("Your second monitor is approved."),
+            _reflection("confirm", "Your second monitor is approved."),
+        ]
+    )
+    tools = ScriptedTools(
+        [
+            _employee_found(),
+            _policy(),
+            _eligibility("in_policy", "Count is under the limit."),
+        ]
+    )
+
+    result = _run(model, tools)
+
+    assert tools.calls == [
+        "get_employee_info",
+        "get_policy_limits",
+        "check_request_eligibility",
+    ]
+    assert any(
+        event["kind"] == "observation" and "employee" in event["text"].lower()
+        for event in result["trace"]
+    )
+
+
+def test_eligibility_is_blocked_before_policy_when_found() -> None:
+    """A found employee still needs the role sheet before eligibility."""
+    model = ScriptedModel(
+        [
+            _extract(item="monitor"),
+            _tool("get_employee_info", employee_id="E201"),
+            _tool("check_request_eligibility", employee_id="E201", item="monitor"),
+            _tool("get_policy_limits", role="manager"),
+            _tool("check_request_eligibility", employee_id="E201", item="monitor"),
+            _draft("Your second monitor is approved."),
+            _reflection("confirm", "Your second monitor is approved."),
+        ]
+    )
+    tools = ScriptedTools(
+        [
+            _employee_found(),
+            _policy(),
+            _eligibility("in_policy", "Count is under the limit."),
+        ]
+    )
+
+    result = _run(model, tools)
+
+    assert tools.calls == [
+        "get_employee_info",
+        "get_policy_limits",
+        "check_request_eligibility",
+    ]
+    assert any(
+        event["kind"] == "observation" and "policy" in event["text"].lower()
+        for event in result["trace"]
+    )
+
+
+def test_policy_must_use_the_record_role() -> None:
+    """A sheet for the wrong role does not unlock eligibility."""
+    model = ScriptedModel(
+        [
+            _extract(item="monitor"),
+            _tool("get_employee_info", employee_id="E201"),
+            _tool("get_policy_limits", role="standard"),
+            _tool("check_request_eligibility", employee_id="E201", item="monitor"),
+            _tool("get_policy_limits", role="manager"),
+            _tool("check_request_eligibility", employee_id="E201", item="monitor"),
+            _draft("Your second monitor is approved."),
+            _reflection("confirm", "Your second monitor is approved."),
+        ]
+    )
+    tools = ScriptedTools(
+        [
+            _employee_found(),
+            _policy("standard"),
+            _policy(),
+            _eligibility("in_policy", "Count is under the limit."),
+        ]
+    )
+
+    result = _run(model, tools)
+
+    assert tools.calls == [
+        "get_employee_info",
+        "get_policy_limits",
+        "get_policy_limits",
+        "check_request_eligibility",
+    ]
+    assert result["reply"] == "Your second monitor is approved."
+
+
+def test_missing_employee_skips_policy_and_still_classifies() -> None:
+    """A not-found lookup does not need a sheet. Eligibility then a ticket."""
+    model = ScriptedModel(
+        [
+            _extract(item="monitor"),
+            _tool("get_employee_info", employee_id="E999"),
+            _tool("check_request_eligibility", employee_id="E999", item="monitor"),
+            _tool(
+                "flag_for_human_review",
+                employee_id="E999",
+                request="I need a monitor.",
+                reason="No employee E999 is on file.",
+            ),
+            _draft("The request was escalated."),
+            _reflection("confirm", "The request was escalated."),
+        ]
+    )
+    tools = ScriptedTools(
+        [
+            _employee_missing(),
+            _eligibility("not_found", "No employee E999 is on file."),
+            _ticket(),
+        ]
+    )
+
+    result = _run(model, tools, employee_id="E999", query="I need a monitor.")
+
+    assert tools.calls == [
+        "get_employee_info",
+        "check_request_eligibility",
+        "flag_for_human_review",
+    ]
+    assert result["reply"] == "The request was escalated."
+
+
+def test_tool_employee_id_must_match() -> None:
+    """A tool argument that changes the employee id does not reach the server."""
+    model = ScriptedModel(
+        [
+            _extract(item="monitor"),
+            _tool("get_employee_info", employee_id="E999"),
+            _tool("get_employee_info", employee_id="E201"),
+            _tool("get_policy_limits", role="manager"),
+            _tool("check_request_eligibility", employee_id="E201", item="monitor"),
+            _draft("Your second monitor is approved."),
+            _reflection("confirm", "Your second monitor is approved."),
+        ]
+    )
+    tools = ScriptedTools(
+        [
+            _employee_found(),
+            _policy(),
+            _eligibility("in_policy", "Count is under the limit."),
+        ]
+    )
+
+    result = _run(model, tools)
+
+    assert tools.calls == [
+        "get_employee_info",
+        "get_policy_limits",
+        "check_request_eligibility",
+    ]
+    assert any(
+        event["kind"] == "observation" and "employee" in event["text"].lower()
+        for event in result["trace"]
+    )
+    assert result["reply"] == "Your second monitor is approved."

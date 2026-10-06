@@ -25,6 +25,8 @@ class ToolCaller(Protocol):
         """Return text and is_error for one tool call."""
 
 STEP_LIMIT = 8
+LOOKUP_TOOL = "get_employee_info"
+POLICY_TOOL = "get_policy_limits"
 ELIGIBILITY_TOOL = "check_request_eligibility"
 FLAG_TOOL = "flag_for_human_review"
 DECISIVE_STATUSES = {"in_policy", "out_of_policy"}
@@ -43,6 +45,11 @@ ITEM_LOCKED_OBSERVATION = "The item is already bound. Use that item."
 NO_ITEM_ELIGIBILITY_OBSERVATION = (
     "No single item is bound, so eligibility is not allowed."
 )
+NEED_LOOKUP_OBSERVATION = "Look up the employee before checking eligibility."
+NEED_POLICY_OBSERVATION = (
+    "Read the policy for that employee's role before checking eligibility."
+)
+EMPLOYEE_LOCKED_OBSERVATION = "The employee id is already bound. Use that id."
 
 
 def _flag_blocked_observation(status: str | None) -> str:
@@ -135,6 +142,10 @@ async def _run(
     trace: list[dict] = []
     status: str | None = None
     ticket_filed = False
+    looked_up = False
+    employee_found = False
+    record_role: str | None = None
+    policy_ok = False
 
     for _ in range(step_limit):
         reply = adapter.complete(messages)
@@ -175,18 +186,40 @@ async def _run(
         if tool == FLAG_TOOL and not _flag_allowed(status, bound_item):
             _observe(messages, trace, _flag_blocked_observation(status))
             continue
+        if _employee_arg(arguments) not in (None, employee_id):
+            _observe(messages, trace, EMPLOYEE_LOCKED_OBSERVATION)
+            continue
         if tool == ELIGIBILITY_TOOL and bound_item is None:
             _observe(messages, trace, NO_ITEM_ELIGIBILITY_OBSERVATION)
             continue
         if bound_item is not None and _item_arg(arguments) not in (None, bound_item):
             _observe(messages, trace, ITEM_LOCKED_OBSERVATION)
             continue
+        if tool == ELIGIBILITY_TOOL and not looked_up:
+            _observe(messages, trace, NEED_LOOKUP_OBSERVATION)
+            continue
+        if tool == ELIGIBILITY_TOOL and employee_found and not policy_ok:
+            _observe(messages, trace, NEED_POLICY_OBSERVATION)
+            continue
 
         result = await client.call_tool(tool, arguments)
         _observe(messages, trace, result["text"])
         if result["is_error"]:
             continue
-        if tool == ELIGIBILITY_TOOL:
+        if tool == LOOKUP_TOOL:
+            found, role = _lookup_result(result["text"])
+            if found is not None:
+                looked_up = True
+                employee_found = found
+                record_role = role
+        elif tool == POLICY_TOOL:
+            if (
+                employee_found
+                and record_role is not None
+                and _role_arg(arguments) == record_role
+            ):
+                policy_ok = True
+        elif tool == ELIGIBILITY_TOOL:
             found = _status_from_eligibility(result["text"])
             if found is not None:
                 status = found
@@ -224,11 +257,45 @@ def _react_user(employee_id: str, query: str, bound_item: str | None) -> str:
 
 def _item_arg(arguments: dict) -> str | None:
     """The normalized item argument, if the call named one."""
-    value = arguments.get("item")
+    return _normalized_arg(arguments, "item")
+
+
+def _employee_arg(arguments: dict) -> str | None:
+    """The employee id argument, if the call named one."""
+    value = arguments.get("employee_id")
+    if not isinstance(value, str) or not value.strip():
+        return None
+    return value.strip()
+
+
+def _role_arg(arguments: dict) -> str | None:
+    """The normalized role argument, if the call named one."""
+    return _normalized_arg(arguments, "role")
+
+
+def _normalized_arg(arguments: dict, key: str) -> str | None:
+    """Strip and lowercase one string argument."""
+    value = arguments.get(key)
     if not isinstance(value, str):
         return None
-    item = value.strip().lower()
-    return item or None
+    text = value.strip().lower()
+    return text or None
+
+
+def _lookup_result(text: str) -> tuple[bool | None, str | None]:
+    """Whether the lookup found a person, and the role when it did."""
+    try:
+        body = json.loads(text)
+    except json.JSONDecodeError:
+        return None, None
+    if not isinstance(body, dict):
+        return None, None
+    if body.get("status") == "not_found":
+        return False, None
+    role = body.get("role")
+    if not isinstance(role, str) or not role.strip():
+        return None, None
+    return True, role.strip().lower()
 
 
 def _flag_allowed(status: str | None, bound_item: str | None) -> bool:
