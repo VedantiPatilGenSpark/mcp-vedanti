@@ -371,6 +371,8 @@ def test_extract_runs_before_react() -> None:
     react_user = model.transcripts[1][1]["content"]
     assert "Item: monitor" in react_user
     assert result["reply"] == "Your second monitor is approved."
+    assert result["status"] == "in_policy"
+    assert result["decision"] == "approve"
 
 
 def test_tool_item_must_match_extract() -> None:
@@ -436,6 +438,8 @@ def test_missing_item_allows_flag_without_eligibility() -> None:
     assert "Item: null" in model.transcripts[1][1]["content"]
     assert tools.calls == ["flag_for_human_review"]
     assert result["reply"] == "The request was escalated."
+    assert result["status"] is None
+    assert result["decision"] == "escalate"
 
 
 def test_two_items_allows_flag_without_eligibility() -> None:
@@ -692,3 +696,4 @@ def test_step_limit_prints_an_employee_reply() -> None:
     assert result["stop"] == "step_limit"
     assert result["reply"] == STEP_LIMIT_REPLY
     assert result["draft"] is None
+    assert result["decision"] is None

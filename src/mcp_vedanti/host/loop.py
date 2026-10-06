@@ -32,6 +32,21 @@ FLAG_TOOL = "flag_for_human_review"
 DECISIVE_STATUSES = {"in_policy", "out_of_policy"}
 REVIEW_STATUSES = {"indeterminate", "not_found"}
 
+
+def run_decision(*, status: str | None, ticket_filed: bool, stop: str) -> str | None:
+    """Map a finished run to approve, deny, or escalate. Step limits have no decision."""
+    if stop == "step_limit":
+        return None
+    if status == "in_policy":
+        return "approve"
+    if status == "out_of_policy":
+        return "deny"
+    if status in REVIEW_STATUSES:
+        return "escalate"
+    if status is None and ticket_filed:
+        return "escalate"
+    return None
+
 PARSE_OBSERVATION = (
     "The reply was not one JSON object with a thought and either a tool "
     "or a draft."
@@ -174,6 +189,8 @@ async def _run(
                     parsed["draft"],
                     "draft",
                     run_dir,
+                    status=status,
+                    ticket_filed=ticket_filed,
                     verdict=verdict,
                     reply=reply,
                 )
@@ -239,6 +256,8 @@ async def _run(
         None,
         "step_limit",
         run_dir,
+        status=status,
+        ticket_filed=ticket_filed,
         reply=STEP_LIMIT_REPLY,
     )
 
@@ -378,6 +397,8 @@ def _finish(
     stop: str,
     run_dir: Path | None,
     *,
+    status: str | None,
+    ticket_filed: bool,
     verdict: str | None = None,
     reply: str | None = None,
 ) -> dict:
@@ -390,6 +411,11 @@ def _finish(
         "trace": trace,
         "draft": draft,
         "stop": stop,
+        "status": status,
+        "ticket_filed": ticket_filed,
+        "decision": run_decision(
+            status=status, ticket_filed=ticket_filed, stop=stop
+        ),
         "verdict": verdict,
         "reply": reply,
         "run_path": None if path is None else str(path),

@@ -62,16 +62,23 @@ def main() -> None:
         help="Run every saved query.",
     )
     parser.add_argument(
+        "--check",
+        action="store_true",
+        help="With --queries, compare each run's status and decision to queries.json.",
+    )
+    parser.add_argument(
         "--run-dir",
         type=Path,
         help="Directory for run files. Default is runs/.",
     )
     args = parser.parse_args()
     run_dir = args.run_dir
+    if args.check and not args.queries:
+        parser.error("--check is only valid with --queries.")
     if args.queries:
         if args.employee_id or args.query:
             parser.error("Pass --queries by itself.")
-        asyncio.run(_saved(run_dir=run_dir))
+        asyncio.run(_saved(run_dir=run_dir, check=args.check))
         return
     employee_id = _flag_employee_id(parser, args.employee_id)
     if employee_id is None:
@@ -92,17 +99,44 @@ def _flag_employee_id(parser: argparse.ArgumentParser, value: str | None) -> str
     return normalized
 
 
-async def _saved(*, run_dir: Path | None) -> None:
+async def _saved(*, run_dir: Path | None, check: bool = False) -> None:
     """Run each saved row through the same path as one request."""
     rows = json.loads(QUERIES_PATH.read_text())
     adapter = load_adapter()
     kwargs = {}
     if run_dir is not None:
         kwargs["run_dir"] = run_dir
+    failures = 0
     for row in rows:
         employee_id = normalize_employee_id(row["employee_id"]) or row["employee_id"]
         print(f"\n=== {employee_id}: {row['query']} ===", flush=True)
-        await run_request(employee_id, row["query"], adapter, **kwargs)
+        result = await run_request(employee_id, row["query"], adapter, **kwargs)
+        if not check:
+            continue
+        mismatch = _golden_mismatch(row, result)
+        if mismatch is None:
+            continue
+        failures += 1
+        print(f"CHECK FAIL {employee_id}: {row['query']}\n  {mismatch}", flush=True)
+    if check and failures:
+        print(f"\n{failures} of {len(rows)} queries failed the golden check.", flush=True)
+        raise SystemExit(1)
+
+
+def _golden_mismatch(row: dict, result: dict) -> str | None:
+    """Why a run missed the saved status and decision, or None when it matched."""
+    if result.get("stop") == "step_limit":
+        return "stop=step_limit"
+    expected_status = row.get("status")
+    expected_decision = row.get("decision")
+    got_status = result.get("status")
+    got_decision = result.get("decision")
+    if got_status == expected_status and got_decision == expected_decision:
+        return None
+    return (
+        f"expected status={expected_status!r} decision={expected_decision!r} "
+        f"got status={got_status!r} decision={got_decision!r}"
+    )
 
 
 if __name__ == "__main__":

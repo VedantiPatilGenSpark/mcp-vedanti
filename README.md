@@ -96,7 +96,7 @@ To run every saved request, with no prompts:
 python -m mcp_vedanti.host --queries
 ```
 
-`--queries` cannot be mixed with `--employee-id` or `--query`.
+`--queries --check` also compares each run's `status` and `decision` to `queries.json` (class only, not the draft wording). `--queries` cannot be mixed with `--employee-id` or `--query`.
 
 Each request is printed as it happens and written to `runs/`. That directory is gitignored. A finished file looks like this:
 

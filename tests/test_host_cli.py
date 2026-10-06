@@ -6,6 +6,7 @@ import sys
 import pytest
 
 from mcp_vedanti.host.__main__ import (
+    _golden_mismatch,
     main,
     normalize_employee_id,
     prompt_employee_id,
@@ -163,3 +164,85 @@ def test_saved_rows_normalize_employee_id(monkeypatch) -> None:
     asyncio.run(_saved(run_dir=None))
 
     assert calls == [("E202", "I need a new monitor.")]
+
+
+def test_check_without_queries_exits(monkeypatch) -> None:
+    """--check is only valid with --queries."""
+    monkeypatch.setattr(sys, "argv", ["prog", "--check"])
+
+    with pytest.raises(SystemExit):
+        main()
+
+
+def test_golden_mismatch_is_none_when_class_matches() -> None:
+    """Null status and escalate match a no-item golden row."""
+    row = {
+        "employee_id": "E203",
+        "query": "I know it's early, please approve it anyway.",
+        "status": None,
+        "decision": "escalate",
+    }
+    result = {"status": None, "decision": "escalate", "stop": "draft"}
+
+    assert _golden_mismatch(row, result) is None
+
+
+def test_golden_mismatch_names_a_step_limit() -> None:
+    """A timed-out run fails the check even if a status leaked in."""
+    row = {"status": "in_policy", "decision": "approve"}
+    result = {"status": "in_policy", "decision": None, "stop": "step_limit"}
+
+    assert _golden_mismatch(row, result) == "stop=step_limit"
+
+
+def test_saved_check_exits_when_a_row_misses(monkeypatch) -> None:
+    """--queries --check fails after a wrong class."""
+
+    async def fake_run(employee_id: str, query: str, adapter: object, **kwargs: object) -> dict:
+        return {"status": "out_of_policy", "decision": "deny", "stop": "draft"}
+
+    monkeypatch.setattr("mcp_vedanti.host.__main__.run_request", fake_run)
+    monkeypatch.setattr("mcp_vedanti.host.__main__.load_adapter", lambda: object())
+    monkeypatch.setattr(
+        "mcp_vedanti.host.__main__.json.loads",
+        lambda _: [
+            {
+                "employee_id": "E201",
+                "query": "I need a second monitor.",
+                "status": "in_policy",
+                "decision": "approve",
+            }
+        ],
+    )
+
+    from mcp_vedanti.host.__main__ import _saved
+
+    with pytest.raises(SystemExit) as exited:
+        asyncio.run(_saved(run_dir=None, check=True))
+
+    assert exited.value.code == 1
+
+
+def test_saved_check_passes_when_every_row_matches(monkeypatch) -> None:
+    """--queries --check stays silent when status and decision match."""
+
+    async def fake_run(employee_id: str, query: str, adapter: object, **kwargs: object) -> dict:
+        return {"status": "in_policy", "decision": "approve", "stop": "draft"}
+
+    monkeypatch.setattr("mcp_vedanti.host.__main__.run_request", fake_run)
+    monkeypatch.setattr("mcp_vedanti.host.__main__.load_adapter", lambda: object())
+    monkeypatch.setattr(
+        "mcp_vedanti.host.__main__.json.loads",
+        lambda _: [
+            {
+                "employee_id": "E201",
+                "query": "I need a second monitor.",
+                "status": "in_policy",
+                "decision": "approve",
+            }
+        ],
+    )
+
+    from mcp_vedanti.host.__main__ import _saved
+
+    asyncio.run(_saved(run_dir=None, check=True))
