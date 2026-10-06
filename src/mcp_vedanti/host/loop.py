@@ -9,6 +9,7 @@ from typing import Protocol
 
 from mcp_vedanti.host.adapter import ModelAdapter
 from mcp_vedanti.host.client import EquipmentClient
+from mcp_vedanti.host.extract import extract_prompt, parse_extract
 from mcp_vedanti.host.prompt import agent_prompt
 from mcp_vedanti.host.reflect import employee_reply, reflect
 from mcp_vedanti.host.runlog import RUNS_DIR, format_event, format_run, run_path, write_run
@@ -37,6 +38,10 @@ NEED_REVIEW_OBSERVATION = "A review has to be filed before a reply."
 NEED_STATUS_OBSERVATION = (
     "A unit already on the record does not finish the request, so continue "
     "with the policy lookup and then the eligibility check."
+)
+ITEM_LOCKED_OBSERVATION = "The item is already bound. Use that item."
+NO_ITEM_ELIGIBILITY_OBSERVATION = (
+    "No single item is bound, so eligibility is not allowed."
 )
 
 
@@ -122,12 +127,10 @@ async def _run(
     run_dir: Path | None,
 ) -> dict:
     tools = await client.list_tools()
+    bound_item = _bound_item(adapter, employee_id, query)
     messages = [
         {"role": "system", "content": agent_prompt(tools)},
-        {
-            "role": "user",
-            "content": f"Employee id: {employee_id}\nQuery: {query}",
-        },
+        {"role": "user", "content": _react_user(employee_id, query, bound_item)},
     ]
     trace: list[dict] = []
     status: str | None = None
@@ -143,7 +146,7 @@ async def _run(
 
         _record(trace, {"kind": "thought", "text": parsed["thought"]})
         if "draft" in parsed:
-            if _draft_can_finish(status, ticket_filed):
+            if _draft_can_finish(status, ticket_filed, bound_item):
                 _record(trace, {"kind": "draft", "text": parsed["draft"]})
                 verdict, reply = _reflect(adapter, trace, parsed["draft"], status)
                 print(f"Verdict: {verdict}", flush=True)
@@ -160,7 +163,7 @@ async def _run(
                 )
             observation = (
                 NEED_REVIEW_OBSERVATION
-                if status in REVIEW_STATUSES
+                if status in REVIEW_STATUSES or bound_item is None
                 else NEED_STATUS_OBSERVATION
             )
             _observe(messages, trace, observation)
@@ -169,8 +172,14 @@ async def _run(
         tool = parsed["tool"]
         arguments = parsed["arguments"]
         _record(trace, {"kind": "action", "tool": tool, "arguments": arguments})
-        if tool == FLAG_TOOL and status not in REVIEW_STATUSES:
+        if tool == FLAG_TOOL and not _flag_allowed(status, bound_item):
             _observe(messages, trace, _flag_blocked_observation(status))
+            continue
+        if tool == ELIGIBILITY_TOOL and bound_item is None:
+            _observe(messages, trace, NO_ITEM_ELIGIBILITY_OBSERVATION)
+            continue
+        if bound_item is not None and _item_arg(arguments) not in (None, bound_item):
+            _observe(messages, trace, ITEM_LOCKED_OBSERVATION)
             continue
 
         result = await client.call_tool(tool, arguments)
@@ -187,11 +196,57 @@ async def _run(
     return _finish(employee_id, query, trace, None, "step_limit", run_dir)
 
 
-def _draft_can_finish(status: str | None, ticket_filed: bool) -> bool:
-    """A clear status can end on a draft. A review status can end after a ticket."""
+def _bound_item(adapter: ModelAdapter, employee_id: str, query: str) -> str | None:
+    """One extract call. A single name is bound. Anything else leaves the item unset."""
+    parsed = parse_extract(
+        adapter.complete(
+            [
+                {"role": "system", "content": extract_prompt()},
+                {
+                    "role": "user",
+                    "content": f"Employee id: {employee_id}\nQuery: {query}",
+                },
+            ]
+        )
+    )
+    if parsed is None or "items" in parsed:
+        return None
+    return parsed["item"]
+
+
+def _react_user(employee_id: str, query: str, bound_item: str | None) -> str:
+    """The ReAct user message. The item is included only when extract bound one."""
+    text = f"Employee id: {employee_id}\nQuery: {query}"
+    if bound_item is not None:
+        text += f"\nItem: {bound_item}"
+    return text
+
+
+def _item_arg(arguments: dict) -> str | None:
+    """The normalized item argument, if the call named one."""
+    value = arguments.get("item")
+    if not isinstance(value, str):
+        return None
+    item = value.strip().lower()
+    return item or None
+
+
+def _flag_allowed(status: str | None, bound_item: str | None) -> bool:
+    """A ticket is allowed after a review status, or when no single item was bound."""
+    if status in REVIEW_STATUSES:
+        return True
+    return status is None and bound_item is None
+
+
+def _draft_can_finish(
+    status: str | None, ticket_filed: bool, bound_item: str | None
+) -> bool:
+    """A clear status can end on a draft. A review path can end after a ticket."""
     if status in DECISIVE_STATUSES:
         return True
-    return status in REVIEW_STATUSES and ticket_filed
+    if status in REVIEW_STATUSES and ticket_filed:
+        return True
+    return status is None and bound_item is None and ticket_filed
 
 
 def _record(trace: list[dict], event: dict) -> None:

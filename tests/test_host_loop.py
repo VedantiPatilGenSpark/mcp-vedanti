@@ -3,6 +3,7 @@
 import asyncio
 import json
 
+from mcp_vedanti.host.extract import extract_prompt
 from mcp_vedanti.host.loop import run_request
 
 
@@ -66,11 +67,25 @@ def _eligibility(status: str, reason: str) -> dict:
     }
 
 
-def _run(model: ScriptedModel, tools: ScriptedTools) -> dict:
+def _extract(*, item: str | None = None, items: list[str] | None = None) -> str:
+    body: dict = {"thought": "Name the item."}
+    if items is not None:
+        body["items"] = items
+    else:
+        body["item"] = item
+    return json.dumps(body)
+
+
+def _run(
+    model: ScriptedModel,
+    tools: ScriptedTools,
+    employee_id: str = "E201",
+    query: str = "I need a second monitor.",
+) -> dict:
     return asyncio.run(
         run_request(
-            "E201",
-            "I need a second monitor.",
+            employee_id,
+            query,
             model,
             client=tools,
             run_dir=None,
@@ -82,6 +97,7 @@ def test_tool_step_records_thought_action_and_observation() -> None:
     """One tool call lands in the trace as thought, action, then observation."""
     model = ScriptedModel(
         [
+            _extract(item="monitor"),
             _tool("check_request_eligibility", employee_id="E201", item="monitor"),
             _draft("Your second monitor is approved."),
             _reflection("confirm", "Your second monitor is approved."),
@@ -105,6 +121,7 @@ def test_rejected_argument_is_an_observation() -> None:
     """A rejected tool call is an observation, and the model gets another step."""
     model = ScriptedModel(
         [
+            _extract(item="monitor"),
             _tool("check_request_eligibility", employee_id="E201", item="monitor"),
             _tool("check_request_eligibility", employee_id="E201", item="monitor"),
             _draft("Your second monitor is approved."),
@@ -129,6 +146,7 @@ def test_flag_is_blocked_when_status_is_in_policy() -> None:
     """A ticket call does not reach the server after an in-policy classification."""
     model = ScriptedModel(
         [
+            _extract(item="monitor"),
             _tool("check_request_eligibility", employee_id="E201", item="monitor"),
             _tool("flag_for_human_review", employee_id="E201", request="x", reason="y"),
             _draft("Your second monitor is approved."),
@@ -150,6 +168,7 @@ def test_draft_is_held_until_a_ticket_exists() -> None:
     """An indeterminate draft does not finish the loop before the review is filed."""
     model = ScriptedModel(
         [
+            _extract(item="headset"),
             _tool("check_request_eligibility", employee_id="E207", item="headset"),
             _draft("Approved."),
             _tool(
@@ -188,6 +207,7 @@ def test_reflector_runs_on_observations_before_the_reply() -> None:
     draft = "Your second monitor is approved."
     model = ScriptedModel(
         [
+            _extract(item="monitor"),
             _tool("check_request_eligibility", employee_id="E201", item="monitor"),
             _draft(draft),
             _reflection("confirm", "This text is ignored on confirm."),
@@ -211,6 +231,7 @@ def test_contradicting_reply_falls_back_to_the_tool_reason() -> None:
     """A reply that denies an in-policy result is replaced by the tool reason."""
     model = ScriptedModel(
         [
+            _extract(item="monitor"),
             _tool("check_request_eligibility", employee_id="E201", item="monitor"),
             _draft("Your second monitor is denied."),
             _reflection("confirm", "Your second monitor is denied."),
@@ -222,3 +243,130 @@ def test_contradicting_reply_falls_back_to_the_tool_reason() -> None:
 
     assert result["verdict"] == "rewrite"
     assert result["reply"] == "Count is under the limit."
+
+
+def test_extract_runs_before_react() -> None:
+    """The first model call is extract. ReAct then sees the bound item."""
+    model = ScriptedModel(
+        [
+            _extract(item="monitor"),
+            _tool("check_request_eligibility", employee_id="E201", item="monitor"),
+            _draft("Your second monitor is approved."),
+            _reflection("confirm", "Your second monitor is approved."),
+        ]
+    )
+    tools = ScriptedTools([_eligibility("in_policy", "Count is under the limit.")])
+
+    result = _run(model, tools)
+
+    assert model.transcripts[0][0]["content"] == extract_prompt()
+    react_user = model.transcripts[1][1]["content"]
+    assert "Item: monitor" in react_user
+    assert result["reply"] == "Your second monitor is approved."
+
+
+def test_tool_item_must_match_extract() -> None:
+    """A tool argument that changes the bound item does not reach the server."""
+    model = ScriptedModel(
+        [
+            _extract(item="monitor"),
+            _tool("check_request_eligibility", employee_id="E201", item="laptop"),
+            _tool("check_request_eligibility", employee_id="E201", item="monitor"),
+            _draft("Your second monitor is approved."),
+            _reflection("confirm", "Your second monitor is approved."),
+        ]
+    )
+    tools = ScriptedTools([_eligibility("in_policy", "Count is under the limit.")])
+
+    result = _run(model, tools)
+
+    assert tools.calls == ["check_request_eligibility"]
+    assert any(
+        event["kind"] == "observation" and "item" in event["text"].lower()
+        for event in result["trace"]
+    )
+
+
+def test_missing_item_allows_flag_without_eligibility() -> None:
+    """A query with no item files a review and never classifies."""
+    model = ScriptedModel(
+        [
+            _extract(item=None),
+            _tool(
+                "flag_for_human_review",
+                employee_id="E203",
+                request="I know it's early, please approve it anyway.",
+                reason="The request does not name an item.",
+            ),
+            _draft("The request was escalated."),
+            _reflection("confirm", "The request was escalated."),
+        ]
+    )
+    tools = ScriptedTools(
+        [{"text": json.dumps({"escalation_id": "ESC-1"}), "is_error": False}]
+    )
+
+    result = _run(
+        model,
+        tools,
+        employee_id="E203",
+        query="I know it's early, please approve it anyway.",
+    )
+
+    assert tools.calls == ["flag_for_human_review"]
+    assert result["reply"] == "The request was escalated."
+
+
+def test_two_items_allows_flag_without_eligibility() -> None:
+    """Two named items file a review and never classify."""
+    model = ScriptedModel(
+        [
+            _extract(items=["monitor", "laptop"]),
+            _tool(
+                "flag_for_human_review",
+                employee_id="E201",
+                request="I want a monitor and a laptop.",
+                reason="The request named more than one item.",
+            ),
+            _draft("The request was escalated."),
+            _reflection("confirm", "The request was escalated."),
+        ]
+    )
+    tools = ScriptedTools(
+        [{"text": json.dumps({"escalation_id": "ESC-1"}), "is_error": False}]
+    )
+
+    result = _run(
+        model,
+        tools,
+        employee_id="E201",
+        query="I want a monitor and a laptop.",
+    )
+
+    assert tools.calls == ["flag_for_human_review"]
+    assert result["reply"] == "The request was escalated."
+
+
+def test_unusable_extract_is_treated_as_no_item() -> None:
+    """A bad extract reply takes the missing-item path instead of entering ReAct parse errors."""
+    model = ScriptedModel(
+        [
+            "not json",
+            _tool(
+                "flag_for_human_review",
+                employee_id="E201",
+                request="I need a second monitor.",
+                reason="The request does not name an item.",
+            ),
+            _draft("The request was escalated."),
+            _reflection("confirm", "The request was escalated."),
+        ]
+    )
+    tools = ScriptedTools(
+        [{"text": json.dumps({"escalation_id": "ESC-1"}), "is_error": False}]
+    )
+
+    result = _run(model, tools)
+
+    assert tools.calls == ["flag_for_human_review"]
+    assert result["reply"] == "The request was escalated."
