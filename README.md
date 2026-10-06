@@ -131,5 +131,6 @@ The container installs Python 3.12 and the requirements. It does not install thi
 - `docs/server.md` — the check order and the reason sentences
 - `docs/corpus.md` — why each employee record is in the mock data
 - `docs/host-queries.md` — each saved request and why it approves, denies, or escalates
+- `docs/eval-v2.md` — live query-set method and results
 - `docs/extract-prelude.md` — why item extract runs before ReAct
 - `docs/defenses.md` — one-liner design notes
