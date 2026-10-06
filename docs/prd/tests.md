@@ -112,3 +112,5 @@ The test file does not approve, deny, or decide who should be flagged. It only c
 ## Done when
 
 The five test modules exist, every row above has a test, and those tests pass against `data.py` and `equipment.py`. Corpus tests assert the records in `docs/prd/mock-data.md`. The function tests do not open an MCP client.
+
+Host tests live in `tests/test_host_*.py`. They cover CLI input, extract, the ReAct loop, and the prompt. They use a scripted model and do not call Ollama. They are not this server contract.

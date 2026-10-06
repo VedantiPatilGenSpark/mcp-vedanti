@@ -16,6 +16,8 @@ The assistant extracts three fields from the employee's message:
 
 Role, tenure, current equipment, and the policy numbers are not taken from the message. Those come from the server. If the message claims "I am a manager," the role on the employee record is the one that counts.
 
+The host takes `employee_id` from the CLI (`E` plus three digits). It names `item` in one extract call before ReAct. It does not pass the employee's justification into eligibility.
+
 The employee's `reason` is their justification. It is not an input to eligibility. The `reason` stored on an escalation is a different sentence: why a person has to review the case.
 
 ## Mock data

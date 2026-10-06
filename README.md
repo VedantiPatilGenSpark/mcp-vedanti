@@ -8,9 +8,9 @@ The server is an MCP service. It looks up an employee, reads that role's policy,
 
 The employee id comes from a prompt or from `--employee-id`. It must look like `E201` (letter `E` and three digits, any case). The host capitalizes it. A well-formed id that is not on file is not a CLI error. Eligibility returns `not_found` and the host escalates.
 
-The item is named in one model call before ReAct. Same-device words may become the catalog word (`headphones` → `headset`). A different device is not rewritten (`computer` is not `laptop`). If extract finds no item, or two or more, the agent files a review and eligibility is not called. `status` in the query set is empty for those rows.
+The item is named in one model call before ReAct. Same-device words may become the catalog word (`headphones` → `headset`). A different device is not rewritten (`computer` is not `laptop`). The ReAct user message always includes `Item:`: one name, or `null` when extract found none or two or more. If the item is `null`, the agent files a review and eligibility is not called. `status` in the query set is empty for those rows.
 
-When there is one item, the server returns one status, and the host follows it.
+When there is one item, the host requires employee lookup, then that role’s policy sheet if the person was found, then eligibility. A missing person skips the sheet and still classifies. The server returns one status, and the host follows it.
 
 | Status | What the host does |
 |---|---|
@@ -33,9 +33,10 @@ src/mcp_vedanti/host/queries.json
 tests/                           Server tests and host tests. No model required.
 docs/prd/                     Server requirements, mock data, and test contract.
 docs/host-queries.md             What each saved request is checking.
+docs/eval-v2.md                  Live query-set method and results.
 ```
 
-The host first asks the model to name the item. Then the ReAct loop asks for one JSON step at a time: a tool call, or a draft reply. Python runs the tool and appends the observation. It blocks a skip of lookup or policy, and a tool argument that changes the bound id or item. After a draft is allowed, a second model call checks the wording. The run file ends with `Verdict:` (`confirm` or `rewrite`) and `Reply:`.
+The host first asks the model to name the item. Then the ReAct loop asks for one JSON step at a time: a tool call, or a draft reply. The system prompt describes jobs in English. Live tool names come from `list_tools`. Python runs the tool and appends the observation. It blocks a skip of lookup or policy, a ticket before classification when an item is bound, and a tool argument that changes the bound id or item. After a draft is allowed, a second model call checks the wording. The run file ends with `Verdict:` (`confirm` or `rewrite`) and `Reply:`. If the loop hits eight steps, the employee sees that the host could not finish. That line does not invent a ticket.
 
 ## Requirements
 
@@ -82,7 +83,7 @@ In a second terminal, with the same virtualenv:
 python -m mcp_vedanti.host
 ```
 
-The host prompts `Employee ID: ` and `Query: ` until each line is non-empty. A bad id shape prints `Employee ID must look like E201.` and asks again. `e201` is stored as `E201`.
+The host prompts `Employee ID: ` and `Query: ` until each line is non-empty. A bad id shape prints `Invalid Employee ID. Please enter Employee ID in format Exxx.` and asks again. `e201` is stored as `E201`.
 
 Flags still work:
 
@@ -96,7 +97,11 @@ To run every saved request, with no prompts:
 python -m mcp_vedanti.host --queries
 ```
 
-`--queries --check` also compares each run's `status` and `decision` to `queries.json` (class only, not the draft wording). `--queries` cannot be mixed with `--employee-id` or `--query`.
+`--queries --check` also compares each run's `status` and `decision` to `queries.json` (class only, not the draft wording). `--queries` cannot be mixed with `--employee-id` or `--query`. Traces default to `runs/`. For a named folder:
+
+```bash
+python -m mcp_vedanti.host --queries --check --run-dir runs-v2
+```
 
 Each request is printed as it happens and written to `runs/`. That directory is gitignored. A finished file looks like this:
 

@@ -1,6 +1,8 @@
 # Host queries
 
-Each row is one employee message and the decision the host must follow. Every row is in `src/mcp_vedanti/host/queries.json`. People below are in `src/mcp_vedanti/data.py` except `E999`, which is the missing-employee id.
+Each row is one employee message and the decision the host must follow. Every row is in `src/mcp_vedanti/host/queries.json`. People below are in `src/mcp_vedanti/data.py` except `E999`, which is the missing-employee id. Live scoring of this set is `docs/eval-v2.md`.
+
+E209 (contractor, no policy sheet) is in the corpus and the server tests. It is not in this runner.
 
 | Employee | Ask for | Status | Decision | What it is testing |
 |---|---|---|---|---|

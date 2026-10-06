@@ -14,11 +14,11 @@ A found record returns `employee_id`, `role`, `tenure_years`, and `equipment`. I
 
 ## `get_policy_limits`
 
-The role is normalized, then used as a key in `POLICY`. A missing role, including `contractor`, returns the normalized role and `status: not_found`. A found sheet returns `role` and `items` only. Item order is the order stored on the sheet. Each row is copied. Rows with `min_tenure_years` of 1 stay on the sheet. This function does not look at an employee.
+The role is normalized through `_policy_sheet`. That helper copies the sheet rows, or returns `None` when the role is missing. `get_policy_limits` and `check_request_eligibility` both use it, so they cannot read different copies of `POLICY`. A missing role, including `contractor`, returns the normalized role and `status: not_found`. A found sheet returns `role` and `items` only. Item order is the order stored on the sheet. Rows with `min_tenure_years` of 1 stay on the sheet. This function does not look at an employee.
 
 ## `check_request_eligibility`
 
-The function loads the person through `get_employee_info` and the sheet from `POLICY`. The caller cannot pass a role or a history. The item in the result is the normalized item. The role in `facts` is the stored role. The role in a sentence is capitalized, so `standard` reads as `Standard`.
+The function loads the person through `get_employee_info` and the sheet through `_policy_sheet`. The caller cannot pass a role or a history. The item in the result is the normalized item. The role in `facts` is the stored role. The role in a sentence is capitalized, so `standard` reads as `Standard`.
 
 `within_policy` is `true` for `in_policy`, `false` for `out_of_policy`, and `None` for `indeterminate` and `not_found`. A missing employee has no `facts`. Every other result includes the facts known at that point. Policy numbers are `None` when there is no matching row.
 
@@ -27,7 +27,7 @@ The function loads the person through `get_employee_info` and the sheet from `PO
 The first match returns. Later checks do not run.
 
 1. **Unknown employee.** `get_employee_info` reports `not_found`. Status is `not_found`. This runs before the catalog check, so `E999` asking for a keyboard is still `not_found`.
-2. **Role has no sheet.** `POLICY` has no entry for the role. Status is `indeterminate`. `contractor` stops here, including when the item is also unknown.
+2. **Role has no sheet.** `_policy_sheet` has no rows for the role. Status is `indeterminate`. `contractor` stops here, including when the item is also unknown.
 3. **Item is not in the catalog.** Status is `indeterminate`. `keyboard` is not a denial. The sheet is not consulted.
 4. **Item is not on this role's sheet.** The item is in the catalog and absent from the sheet. Status is `out_of_policy`. A standard dock stops here.
 5. **Tenure is below `min_tenure_years`.** Comparison is `<`. Status is `out_of_policy`. This runs before the count checks, so a short tenure stays a denial. The 90-day buffer does not open it. E205's laptop stops here. The same person's monitor has a minimum of 0, so it continues.

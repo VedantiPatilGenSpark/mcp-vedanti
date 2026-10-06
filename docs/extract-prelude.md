@@ -14,8 +14,10 @@ Eligibility needs exactly one item. “Please approve it anyway” names none. �
 
 The same call is where meaning is allowed. `headphones` may become `headset`. `computer` must not become `laptop`. That judgment is not a host word list and not a server `strip().lower()`. Binding the item before tools keeps a bad synonym from being classified as if it were real.
 
+The ReAct user message always includes the field. One name is `Item: monitor`. No item, two or more items, or an unusable extract reply is `Item: null`. The model is told to flag for review when the item is null. The host does not file that ticket itself: `flag_for_human_review` stays a tool the agent calls.
+
 ## What we did not do
 
-We did not copy the catalog onto the host. We did not add an extract MCP tool. We did not replace ReAct. After one item is bound, the model still chooses tools. That remains the demo.
+We did not copy the catalog onto the host. We did not add an extract MCP tool. We did not replace ReAct. We did not have the host call `flag_for_human_review` before the loop. After one item is bound, or after `Item` is `null`, the model still chooses tools. That remains the demo.
 
 The reflector stays a second model pass on wording. Extract is the other place an extra call is worth it: it prevents a wrong item from entering the loop.

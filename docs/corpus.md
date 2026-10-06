@@ -40,7 +40,7 @@ Every seeded unit has an issue date. A blank date is not a person in this set. I
 | E208, standard, two dated monitors | monitor | Cap is 1, so two units is already over the max. |
 | E209, role contractor, one monitor on file | monitor | The person exists. Contractor has no policy sheet. |
 
-`get_policy_limits("contractor")` is `not_found`. That is a different result from E209's eligibility call.
+`get_policy_limits("contractor")` is `not_found`. That is a different result from E209's eligibility call. E209 is not in the live host query set (`docs/host-queries.md`).
 
 ## Lookup only
 
