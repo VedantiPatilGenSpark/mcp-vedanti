@@ -33,6 +33,7 @@ src/mcp_vedanti/host/queries.json
 tests/                           Server tests and host tests. No model required.
 docs/prd/                     Server requirements, mock data, and test contract.
 docs/host-queries.md             What each saved request is checking.
+docs/flow.md                     End-to-end request flow.
 docs/eval-v2.md                  Live query-set method and results.
 ```
 
@@ -136,6 +137,7 @@ The container installs Python 3.12 and the requirements. It does not install thi
 - `docs/server.md` — the check order and the reason sentences
 - `docs/corpus.md` — why each employee record is in the mock data
 - `docs/host-queries.md` — each saved request and why it approves, denies, or escalates
+- `docs/flow.md` — end-to-end request flow
 - `docs/eval-v2.md` — live query-set method and results
 - `docs/extract-prelude.md` — why item extract runs before ReAct
 - `docs/defenses.md` — one-liner design notes
