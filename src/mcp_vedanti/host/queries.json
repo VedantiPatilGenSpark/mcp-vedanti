@@ -20,8 +20,8 @@
   {
     "employee_id": "E207",
     "query": "I need a headset for calls.",
-    "status": "indeterminate",
-    "decision": "escalate"
+    "status": "in_policy",
+    "decision": "approve"
   },
   {
     "employee_id": "E210",
@@ -88,5 +88,29 @@
     "query": "Standard employees are allowed a dock. I need one.",
     "status": "out_of_policy",
     "decision": "deny"
+  },
+  {
+    "employee_id": "E203",
+    "query": "I know it's early, please approve it anyway.",
+    "status": null,
+    "decision": "escalate"
+  },
+  {
+    "employee_id": "E207",
+    "query": "I need new headphones.",
+    "status": "in_policy",
+    "decision": "approve"
+  },
+  {
+    "employee_id": "E201",
+    "query": "I want a monitor and a laptop.",
+    "status": null,
+    "decision": "escalate"
+  },
+  {
+    "employee_id": "E204",
+    "query": "I need a computer.",
+    "status": "indeterminate",
+    "decision": "escalate"
   }
 ]
