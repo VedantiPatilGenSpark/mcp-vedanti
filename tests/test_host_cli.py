@@ -132,7 +132,7 @@ def test_queries_flag_still_runs_saved_rows(monkeypatch) -> None:
         seen.append(employee_id)
         return {}
 
-    async def fake_saved() -> None:
+    async def fake_saved(**kwargs: object) -> None:
         await fake_run("E201", "I need a second monitor.", object())
 
     monkeypatch.setattr("mcp_vedanti.host.__main__._saved", fake_saved)
@@ -160,6 +160,6 @@ def test_saved_rows_normalize_employee_id(monkeypatch) -> None:
 
     from mcp_vedanti.host.__main__ import _saved
 
-    asyncio.run(_saved())
+    asyncio.run(_saved(prompt="1", run_dir=None))
 
     assert calls == [("E202", "I need a new monitor.")]

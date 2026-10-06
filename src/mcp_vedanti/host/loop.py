@@ -118,14 +118,23 @@ async def run_request(
     client: ToolCaller | None = None,
     step_limit: int = STEP_LIMIT,
     run_dir: Path | None = RUNS_DIR,
+    prompt: str = "1",
 ) -> dict:
     """Run one request. Prints the trace and writes the same text to one file."""
     if client is None:
         async with EquipmentClient() as connected:
             return await _run(
-                employee_id, query, adapter, connected, step_limit, run_dir
+                employee_id,
+                query,
+                adapter,
+                connected,
+                step_limit,
+                run_dir,
+                prompt,
             )
-    return await _run(employee_id, query, adapter, client, step_limit, run_dir)
+    return await _run(
+        employee_id, query, adapter, client, step_limit, run_dir, prompt
+    )
 
 
 async def _run(
@@ -135,11 +144,12 @@ async def _run(
     client: ToolCaller,
     step_limit: int,
     run_dir: Path | None,
+    prompt: str,
 ) -> dict:
     tools = await client.list_tools()
     bound_item = _bound_item(adapter, employee_id, query)
     messages = [
-        {"role": "system", "content": agent_prompt(tools)},
+        {"role": "system", "content": agent_prompt(tools, prompt)},
         {"role": "user", "content": _react_user(employee_id, query, bound_item)},
     ]
     trace: list[dict] = []
