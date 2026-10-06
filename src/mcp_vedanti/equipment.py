@@ -24,15 +24,28 @@ def get_employee_info(employee_id: str) -> dict:
     }
 
 
+def _normalize(value: str) -> str:
+    """Strip surrounding whitespace and lowercase a role or item."""
+    return value.strip().lower()
+
+
+def _policy_sheet(role: str) -> tuple[str, list[dict] | None]:
+    """The normalized role and a copy of that sheet, or None when there is no sheet."""
+    normalized = _normalize(role)
+    items = POLICY.get(normalized)
+    if items is None:
+        return normalized, None
+    return normalized, [dict(row) for row in items]
+
+
 def get_policy_limits(role: str) -> dict:
     """Return the policy sheet for one role."""
-    normalized = role.strip().lower()
-    items = POLICY.get(normalized)
+    normalized, items = _policy_sheet(role)
     if items is None:
         return {"role": normalized, "status": "not_found"}
     return {
         "role": normalized,
-        "items": [dict(row) for row in items],
+        "items": items,
     }
 
 
@@ -64,11 +77,6 @@ _OUTCOMES = {
     ),
     "too_soon": "Refresh is not due. The due date is more than {early_request_days} days away.",
 }
-
-
-def _normalize(value: str) -> str:
-    """Strip surrounding whitespace and lowercase a role or item."""
-    return value.strip().lower()
 
 
 def _reason(outcome: str, **fields: object) -> str:
@@ -173,7 +181,7 @@ def check_request_eligibility(employee_id: str, item: str) -> dict:
     count_on_file = len(units)
     dated_on_file = _dated_units(units)
     newest_issued_on = dated_on_file[-1][1] if dated_on_file else None
-    sheet = POLICY.get(_normalize(role))
+    _, sheet = _policy_sheet(role)
 
     if sheet is None:
         return _result(
