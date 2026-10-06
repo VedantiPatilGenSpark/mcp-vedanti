@@ -8,6 +8,7 @@ STANDARD_SHEET = {
     "items": [
         {"item": "monitor", "max_count": 1, "refresh_years": 3, "min_tenure_years": 0},
         {"item": "laptop", "max_count": 1, "refresh_years": 4, "min_tenure_years": 1},
+        {"item": "headset", "max_count": 1, "refresh_years": 3, "min_tenure_years": 0},
     ],
 }
 
@@ -17,6 +18,7 @@ MANAGER_SHEET = {
         {"item": "monitor", "max_count": 2, "refresh_years": 3, "min_tenure_years": 0},
         {"item": "laptop", "max_count": 1, "refresh_years": 2, "min_tenure_years": 0},
         {"item": "dock", "max_count": 1, "refresh_years": 4, "min_tenure_years": 0},
+        {"item": "headset", "max_count": 1, "refresh_years": 3, "min_tenure_years": 0},
     ],
 }
 
@@ -26,12 +28,13 @@ DIRECTOR_SHEET = {
         {"item": "monitor", "max_count": 2, "refresh_years": 2, "min_tenure_years": 0},
         {"item": "laptop", "max_count": 1, "refresh_years": 2, "min_tenure_years": 0},
         {"item": "dock", "max_count": 1, "refresh_years": 3, "min_tenure_years": 0},
+        {"item": "headset", "max_count": 1, "refresh_years": 3, "min_tenure_years": 0},
     ],
 }
 
 
 def test_standard_sheet() -> None:
-    """Standard is monitor 1/3/0 and laptop 1/4/1, with no dock."""
+    """Standard is monitor 1/3/0, laptop 1/4/1, and headset 1/3/0, with no dock."""
     result = get_policy_limits("standard")
 
     assert result == STANDARD_SHEET
@@ -39,12 +42,12 @@ def test_standard_sheet() -> None:
 
 
 def test_manager_sheet() -> None:
-    """Manager is monitor 2/3/0, laptop 1/2/0, and dock 1/4/0."""
+    """Manager is monitor 2/3/0, laptop 1/2/0, dock 1/4/0, and headset 1/3/0."""
     assert get_policy_limits("manager") == MANAGER_SHEET
 
 
 def test_director_sheet() -> None:
-    """Director is monitor 2/2/0, laptop 1/2/0, and dock 1/3/0."""
+    """Director is monitor 2/2/0, laptop 1/2/0, dock 1/3/0, and headset 1/3/0."""
     assert get_policy_limits("director") == DIRECTOR_SHEET
 
 
@@ -71,7 +74,7 @@ def test_found_sheet_has_every_row_and_no_decision() -> None:
 
     assert set(result) == {"role", "items"}
     assert "employee_id" not in result
-    assert [row["item"] for row in result["items"]] == ["monitor", "laptop"]
+    assert [row["item"] for row in result["items"]] == ["monitor", "laptop", "headset"]
     laptop = next(row for row in result["items"] if row["item"] == "laptop")
     assert laptop["min_tenure_years"] == 1
     for row in result["items"]:

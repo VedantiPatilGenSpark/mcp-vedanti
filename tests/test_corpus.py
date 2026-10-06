@@ -21,9 +21,9 @@ def test_as_of_and_early_request_days() -> None:
 
 
 def test_catalog_items() -> None:
-    """The catalog is monitor, laptop, and dock, and headset is absent."""
-    assert CATALOG_ITEMS == ("monitor", "laptop", "dock")
-    assert "headset" not in CATALOG_ITEMS
+    """The catalog is monitor, laptop, dock, and headset. Keyboard is absent."""
+    assert CATALOG_ITEMS == ("monitor", "laptop", "dock", "headset")
+    assert "keyboard" not in CATALOG_ITEMS
 
 
 def test_policy_roles() -> None:
@@ -38,17 +38,20 @@ def test_policy_sheets() -> None:
     assert POLICY["standard"] == [
         {"item": "monitor", "max_count": 1, "refresh_years": 3, "min_tenure_years": 0},
         {"item": "laptop", "max_count": 1, "refresh_years": 4, "min_tenure_years": 1},
+        {"item": "headset", "max_count": 1, "refresh_years": 3, "min_tenure_years": 0},
     ]
     assert all(row["item"] != "dock" for row in POLICY["standard"])
     assert POLICY["manager"] == [
         {"item": "monitor", "max_count": 2, "refresh_years": 3, "min_tenure_years": 0},
         {"item": "laptop", "max_count": 1, "refresh_years": 2, "min_tenure_years": 0},
         {"item": "dock", "max_count": 1, "refresh_years": 4, "min_tenure_years": 0},
+        {"item": "headset", "max_count": 1, "refresh_years": 3, "min_tenure_years": 0},
     ]
     assert POLICY["director"] == [
         {"item": "monitor", "max_count": 2, "refresh_years": 2, "min_tenure_years": 0},
         {"item": "laptop", "max_count": 1, "refresh_years": 2, "min_tenure_years": 0},
         {"item": "dock", "max_count": 1, "refresh_years": 3, "min_tenure_years": 0},
+        {"item": "headset", "max_count": 1, "refresh_years": 3, "min_tenure_years": 0},
     ]
 
 

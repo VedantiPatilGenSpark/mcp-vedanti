@@ -218,17 +218,40 @@ def test_missing_issue_date_at_the_cap_is_indeterminate() -> None:
     )
 
 
-def test_e207_headset_is_not_in_the_catalog() -> None:
-    """An item outside the catalog is indeterminate, not a denial."""
+def test_e207_headset_under_cap_is_in_policy() -> None:
+    """E207 has no headset on file. Headset is on the standard sheet, so this is under the cap."""
     result = check_request_eligibility("E207", "headset")
 
     _expect(
         result,
         employee_id="E207",
         item="headset",
+        status="in_policy",
+        within_policy=True,
+        facts={
+            "role": "standard",
+            "tenure_years": 8.6,
+            "count_on_file": 0,
+            "newest_issued_on": None,
+            "max_count": 1,
+            "refresh_years": 3,
+            "min_tenure_years": 0,
+        },
+        reason_numbers=(0, 1),
+    )
+
+
+def test_e207_keyboard_is_not_in_the_catalog() -> None:
+    """An item outside the catalog is indeterminate, not a denial."""
+    result = check_request_eligibility("E207", "keyboard")
+
+    _expect(
+        result,
+        employee_id="E207",
+        item="keyboard",
         status="indeterminate",
         within_policy=None,
-        reason_has=("headset", "catalog"),
+        reason_has=("keyboard", "catalog"),
     )
 
 
@@ -308,14 +331,14 @@ def test_e999_monitor_is_not_found() -> None:
     assert "count_on_file" not in facts
 
 
-def test_e999_headset_is_not_found_before_unknown_item() -> None:
-    """A missing employee is decided before the unknown item, so headset is still not-found."""
-    result = check_request_eligibility("E999", "headset")
+def test_e999_keyboard_is_not_found_before_unknown_item() -> None:
+    """A missing employee is decided before the unknown item, so keyboard is still not-found."""
+    result = check_request_eligibility("E999", "keyboard")
 
     _expect(
         result,
         employee_id="E999",
-        item="headset",
+        item="keyboard",
         status="not_found",
         within_policy=None,
         reason_has=("E999",),
