@@ -61,3 +61,11 @@ def test_prompt_names_the_standard_tool_order() -> None:
     assert "check_request_eligibility" in text
     assert "flag_for_human_review" in text
     assert _INSTRUCTIONS["1"] == _INSTRUCTIONS["2"]
+
+
+def test_prompt_requires_a_tool_object_until_the_sequence_is_done() -> None:
+    """Blocked drafts come from emitting draft while a tool is still due."""
+    text = _INSTRUCTIONS["1"]
+    assert 'must have "tool"' in text
+    assert 'must not have "draft"' in text
+    assert "even when the lookup was not_found" in text
