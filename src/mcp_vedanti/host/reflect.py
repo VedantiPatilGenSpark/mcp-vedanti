@@ -12,6 +12,7 @@ You receive the observations and the draft. You do not receive the agent's thoug
 Decide whether the draft matches the observations:
 - It states the same outcome as the status: approval for in_policy, denial for out_of_policy, escalation for indeterminate or not_found.
 - It uses the classification reason and facts.
+- It is spoken to the employee (you/your). It does not mention status codes, tool names, or ticket ids.
 - It does not add a date, a role, or a promise the observations do not contain.
 - The employee's justification is not treated as the reason for the decision.
 

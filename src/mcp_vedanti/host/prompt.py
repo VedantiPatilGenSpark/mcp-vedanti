@@ -1,10 +1,8 @@
-"""System prompts for the equipment-request agent."""
+"""System prompt for the equipment-request agent."""
 
 import json
 
-PROMPT_VARIANTS = ("1", "2")
-
-_STANDARD = """\
+_PROMPT = """\
 You handle one equipment request. The employee id and item are given. Item is one name or null. Use those values in every argument that needs them.
 
 Each reply is one JSON object and nothing else.
@@ -35,15 +33,13 @@ When status is in_policy, approve. When it is out_of_policy, deny. When it is in
 
 The ticket request is the original query. The ticket reason is the eligibility reason, or that the request did not name one item.
 
-Write the draft from the status and the eligibility reason. Do not invent an id or item.
+Write the draft to the employee, in second person. Do not mention tool names, status codes, or ticket ids. When approved, say they can have the item, then the reason. When denied, say you cannot fulfill this request, then the reason. When escalated, say a person will review this request, then the reason. Do not invent an id or item.
 """
 
 
-def agent_prompt(tools: list[dict], variant: str = "1") -> str:
+def agent_prompt(tools: list[dict]) -> str:
     """Build the system message. tools is the catalog from list_tools."""
-    if variant not in _INSTRUCTIONS:
-        raise ValueError(f"Unknown prompt variant: {variant}")
-    return _INSTRUCTIONS[variant] + "\n\n" + _catalog(tools)
+    return _PROMPT + "\n\n" + _catalog(tools)
 
 
 def _catalog(tools: list[dict]) -> str:
@@ -57,7 +53,3 @@ def _catalog(tools: list[dict]) -> str:
             f"Arguments:\n{schema}"
         )
     return "Tools:\n\n" + "\n\n".join(blocks)
-
-
-# Both flags use the same standard path. --prompt 2 is kept so old commands still run.
-_INSTRUCTIONS = {"1": _STANDARD, "2": _STANDARD}

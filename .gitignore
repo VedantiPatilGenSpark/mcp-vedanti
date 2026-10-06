@@ -11,5 +11,4 @@ dist/
 build/
 .DS_Store
 runs/
-runs-prompt1/
-runs-prompt2/
+runs-v2/

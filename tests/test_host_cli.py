@@ -160,6 +160,6 @@ def test_saved_rows_normalize_employee_id(monkeypatch) -> None:
 
     from mcp_vedanti.host.__main__ import _saved
 
-    asyncio.run(_saved(prompt="1", run_dir=None))
+    asyncio.run(_saved(run_dir=None))
 
     assert calls == [("E202", "I need a new monitor.")]
