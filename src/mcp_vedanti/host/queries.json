@@ -112,5 +112,23 @@
     "query": "I need a computer.",
     "status": "indeterminate",
     "decision": "escalate"
+  },
+  {
+    "employee_id": "E999",
+    "query": "I need a monitor.",
+    "status": "not_found",
+    "decision": "escalate"
+  },
+  {
+    "employee_id": "E999",
+    "query": "I need a keyboard.",
+    "status": "not_found",
+    "decision": "escalate"
+  },
+  {
+    "employee_id": "E207",
+    "query": "I need a keyboard.",
+    "status": "indeterminate",
+    "decision": "escalate"
   }
 ]

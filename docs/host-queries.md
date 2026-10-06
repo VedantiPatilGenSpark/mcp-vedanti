@@ -1,6 +1,6 @@
 # Host queries
 
-Each row is one employee message and the decision the host must follow. Every row is in `src/mcp_vedanti/host/queries.json`. Every person below is already in `src/mcp_vedanti/data.py`.
+Each row is one employee message and the decision the host must follow. Every row is in `src/mcp_vedanti/host/queries.json`. People below are in `src/mcp_vedanti/data.py` except `E999`, which is the missing-employee id.
 
 | Employee | Ask for | Status | Decision | What it is testing |
 |---|---|---|---|---|
@@ -23,5 +23,8 @@ Each row is one employee message and the decision the host must follow. Every ro
 | E207 | I need new headphones. | `in_policy` | approve | Extract maps headphones to headset. Same person and sheet as the headset row. |
 | E201 | I want a monitor and a laptop. | | escalate | Extract finds two items. Eligibility is not called. The agent files one review. |
 | E204 | I need a computer. | `indeterminate` | escalate | Extract keeps computer. It does not become laptop. Computer is not in the catalog. |
+| E999 | I need a monitor. | `not_found` | escalate | The id is well-formed and not on file. Eligibility still runs. This is not a denial. |
+| E999 | I need a keyboard. | `not_found` | escalate | Missing person is decided before the unknown item. |
+| E207 | I need a keyboard. | `indeterminate` | escalate | The person is on file. Keyboard is not in the catalog. |
 
-`status` is empty when eligibility does not run. An employee id that is not on file is still out of this set.
+`status` is empty when eligibility does not run.
