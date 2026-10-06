@@ -41,7 +41,7 @@ Role and item values are normalized before they are stored or compared: surround
 
 Roles with a policy sheet: `standard`, `manager`, `director`.
 
-Catalog items: `monitor`, `laptop`, `dock`. `headset` is not in the catalog. Asking for a headset does not produce a denial. The server cannot tell what policy would apply, so the case is indeterminate.
+Catalog items: `monitor`, `laptop`, `dock`, `headset`. `keyboard` is not in the catalog. Asking for a keyboard does not produce a denial. The server cannot tell what policy would apply, so the case is indeterminate. `headphones` is not a catalog key. Server normalize is still only strip and lowercase; `head set` does not become `headset`.
 
 Each role has its own sheet. A sheet does not name an employee and does not say yes or no. For each item the role may request, the sheet gives:
 
@@ -55,11 +55,11 @@ The same item can have different numbers on different roles. That is deliberate,
 
 `max_count` / `refresh_years` / `min_tenure_years`:
 
-| Role | monitor | laptop | dock |
-|---|---|---|---|
-| standard | 1 / 3 / 0 | 1 / 4 / 1 | not on this sheet |
-| manager | 2 / 3 / 0 | 1 / 2 / 0 | 1 / 4 / 0 |
-| director | 2 / 2 / 0 | 1 / 2 / 0 | 1 / 3 / 0 |
+| Role | monitor | laptop | dock | headset |
+|---|---|---|---|---|
+| standard | 1 / 3 / 0 | 1 / 4 / 1 | not on this sheet | 1 / 3 / 0 |
+| manager | 2 / 3 / 0 | 1 / 2 / 0 | 1 / 4 / 0 | 1 / 3 / 0 |
+| director | 2 / 2 / 0 | 1 / 2 / 0 | 1 / 3 / 0 | 1 / 3 / 0 |
 
 A standard employee who asks for a dock is outside policy: dock is a real catalog item, and it is absent from the standard sheet. A standard laptop refreshes every 4 years. A manager or director laptop refreshes every 2. A director's monitor refreshes every 2 years. A standard or manager monitor refreshes every 3. A director's dock refreshes every 3 years. A manager's dock refreshes every 4.
 
@@ -71,13 +71,13 @@ The refresh clock is the issue date of equipment already on file for that item. 
 
 `check_request_eligibility` loads the employee and that role's sheet itself. The caller cannot pass in a role or a history. The first match returns.
 
-1. **Unknown employee.** Status is `not_found`. The result has no `facts`. This wins even when the item is `headset`.
+1. **Unknown employee.** Status is `not_found`. The result has no `facts`. This wins even when the item is `keyboard`.
 2. **Role has no sheet.** Status is `indeterminate`. `contractor` stops here.
-3. **Item is not in the catalog.** Status is `indeterminate`. `headset` is not a denial.
+3. **Item is not in the catalog.** Status is `indeterminate`. `keyboard` is not a denial.
 4. **Item is not on this role's sheet.** Status is `out_of_policy`. A standard dock stops here.
 5. **Tenure is below `min_tenure_years`.** Status is `out_of_policy`. The comparison is `<`. The 90-day buffer does not open this. E205's laptop stops here. The same person's monitor has a minimum of 0, so it continues.
 6. **Count is above `max_count`.** Status is `indeterminate`. The file already holds more units than the sheet allows. Issue dates are not read. E208 stops here.
-7. **Count is under `max_count`.** Status is `in_policy`. The role still has room for another unit, so existing units do not have to be old yet. Issue dates are not required, and a blank date on this path does not escalate. E201's one monitor against a manager cap of 2 stops here.
+7. **Count is under `max_count`.** Status is `in_policy`. The role still has room for another unit, so existing units do not have to be old yet. Issue dates are not required, and a blank date on this path does not escalate. E201's one monitor against a manager cap of 2 stops here. E207's headset against a standard cap of 1 also stops here.
 8. **Count equals `max_count`.** This is a replacement. The due date is `issued_on` plus `refresh_years` calendar years. February 29 in a year that has no February 29 becomes February 28. Decide in this order:
    1. **Missing `issued_on`.** Any unit of this item has no issue date. Status is `indeterminate`. No due date is calculated. The seed data has no such unit.
    2. **Split history.** More than one unit, the oldest is already due, and the newest is not. Status is `indeterminate`. One unit cannot split, because the oldest and the newest are the same object. This runs before the buffer. E211 stops here.
@@ -97,7 +97,7 @@ A tenure shortfall stays `out_of_policy`. The buffer does not open the standard 
 | At `max_count`, and the due date is more than 90 days away | `false` | `out_of_policy` | Deny. Do not escalate. |
 | Tenure is below `min_tenure_years` | `false` | `out_of_policy` | Deny. Do not escalate. |
 | At `max_count`, and a unit of that item has no issue date | `null` | `indeterminate` | Escalate. The seed data has no row like this. The function still refuses to invent a due date if one appears. |
-| The item is not in the catalog, such as `headset` | `null` | `indeterminate` | Escalate. |
+| The item is not in the catalog, such as `keyboard` | `null` | `indeterminate` | Escalate. |
 | The count on file is already above `max_count` | `null` | `indeterminate` | Escalate. |
 | At `max_count`, the oldest unit is due, and the newest is not | `null` | `indeterminate` | Escalate. The reason names both issue dates. |
 | At `max_count`, and the as-of date is inside the 90 days before the due date | `null` | `indeterminate` | Escalate. The reason says the refresh is not due and the request is inside the early-request buffer. |
@@ -106,7 +106,7 @@ A tenure shortfall stays `out_of_policy`. The buffer does not open the standard 
 
 `in_policy` and `out_of_policy` are clear. The assistant writes the approval or the denial from the tool's `reason` and `facts`.
 
-`indeterminate` means the server will not guess. A headset request, a count already over the cap, and a role with no sheet are cases the stored records can produce. A missing issue date is not one of those records. Every seeded unit has a date, because a write would have required one. If a unit at the cap has no date anyway, eligibility still returns `indeterminate` instead of inventing a due date. The split history and the 90-day buffer are different from all of these. Those dates are complete, and they still do not pick a side. `not_found` is also not a denial. Denying a person who is not on file would be a guess. All of these are successful tool results. `within_policy` is `null`, and the assistant escalates.
+`indeterminate` means the server will not guess. A keyboard request, a count already over the cap, and a role with no sheet are cases the stored records can produce. A missing issue date is not one of those records. Every seeded unit has a date, because a write would have required one. If a unit at the cap has no date anyway, eligibility still returns `indeterminate` instead of inventing a due date. The split history and the 90-day buffer are different from all of these. Those dates are complete, and they still do not pick a side. `not_found` is also not a denial. Denying a person who is not on file would be a guess. All of these are successful tool results. `within_policy` is `null`, and the assistant escalates.
 
 A call that omits an argument, or sends a number where a string is required, fails in the tool schema before eligibility runs. That failure is not one of the statuses above.
 
@@ -227,8 +227,8 @@ Input:
 ```json
 {
   "employee_id": "E207",
-  "request": "I need a headset.",
-  "reason": "Item 'headset' is not in the catalog."
+  "request": "I need a keyboard.",
+  "reason": "Item 'keyboard' is not in the catalog."
 }
 ```
 
@@ -238,7 +238,7 @@ Output:
 {
   "escalation_id": "ESC-1",
   "employee_id": "E207",
-  "request": "I need a headset.",
-  "reason": "Item 'headset' is not in the catalog."
+  "request": "I need a keyboard.",
+  "reason": "Item 'keyboard' is not in the catalog."
 }
 ```

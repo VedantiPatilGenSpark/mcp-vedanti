@@ -7,23 +7,26 @@ import datetime
 
 AS_OF = datetime.date(2026, 10, 1)
 EARLY_REQUEST_DAYS = 90
-CATALOG_ITEMS = ("monitor", "laptop", "dock")
+CATALOG_ITEMS = ("monitor", "laptop", "dock", "headset")
 POLICY_ROLES = ("standard", "manager", "director")
 
 POLICY = {
     "standard": [
         {"item": "monitor", "max_count": 1, "refresh_years": 3, "min_tenure_years": 0},
         {"item": "laptop", "max_count": 1, "refresh_years": 4, "min_tenure_years": 1},
+        {"item": "headset", "max_count": 1, "refresh_years": 3, "min_tenure_years": 0},
     ],
     "manager": [
         {"item": "monitor", "max_count": 2, "refresh_years": 3, "min_tenure_years": 0},
         {"item": "laptop", "max_count": 1, "refresh_years": 2, "min_tenure_years": 0},
         {"item": "dock", "max_count": 1, "refresh_years": 4, "min_tenure_years": 0},
+        {"item": "headset", "max_count": 1, "refresh_years": 3, "min_tenure_years": 0},
     ],
     "director": [
         {"item": "monitor", "max_count": 2, "refresh_years": 2, "min_tenure_years": 0},
         {"item": "laptop", "max_count": 1, "refresh_years": 2, "min_tenure_years": 0},
         {"item": "dock", "max_count": 1, "refresh_years": 3, "min_tenure_years": 0},
+        {"item": "headset", "max_count": 1, "refresh_years": 3, "min_tenure_years": 0},
     ],
 }
 

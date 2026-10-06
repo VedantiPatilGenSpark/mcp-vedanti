@@ -12,12 +12,12 @@ The rules live in `docs/prd/requirements.md`. `docs/prd/tests.md` asserts these 
 |---|---|
 | `AS_OF` | `datetime.date(2026, 10, 1)` |
 | `EARLY_REQUEST_DAYS` | `90` |
-| `CATALOG_ITEMS` | `("monitor", "laptop", "dock")` |
+| `CATALOG_ITEMS` | `("monitor", "laptop", "dock", "headset")` |
 | `POLICY_ROLES` | `("standard", "manager", "director")` |
 | `POLICY` | the three sheets below |
 | `EMPLOYEES` | the records below, keyed by `employee_id` |
 
-`headset` is not a catalog item. `contractor` is not a policy role. Do not add a sheet for it.
+`keyboard` is not a catalog item. `contractor` is not a policy role. Do not add a sheet for it.
 
 No function in this file decides eligibility, computes tenure, or files an escalation. Dates are stored as ISO strings. Callers do the math.
 
@@ -25,11 +25,11 @@ No function in this file decides eligibility, computes tenure, or files an escal
 
 Each item rule is `max_count`, `refresh_years`, `min_tenure_years`.
 
-**standard:** monitor `1 / 3 / 0`, laptop `1 / 4 / 1`. No dock row.
+**standard:** monitor `1 / 3 / 0`, laptop `1 / 4 / 1`, headset `1 / 3 / 0`. No dock row.
 
-**manager:** monitor `2 / 3 / 0`, laptop `1 / 2 / 0`, dock `1 / 4 / 0`.
+**manager:** monitor `2 / 3 / 0`, laptop `1 / 2 / 0`, dock `1 / 4 / 0`, headset `1 / 3 / 0`.
 
-**director:** monitor `2 / 2 / 0`, laptop `1 / 2 / 0`, dock `1 / 3 / 0`.
+**director:** monitor `2 / 2 / 0`, laptop `1 / 2 / 0`, dock `1 / 3 / 0`, headset `1 / 3 / 0`.
 
 Store items in that order. Role and item strings are already lowercase.
 
@@ -46,7 +46,7 @@ Equipment is one object per unit: `{"item": "...", "issued_on": "YYYY-MM-DD"}`. 
 | E203 | standard | 2018-03-01 | 8.6 | one monitor, 2024-01-15 | Due date 2027-01-15 is 106 days after the as-of date. |
 | E204 | standard | 2018-03-01 | 8.6 | none | Dock is a catalog item and is not on the standard sheet. |
 | E205 | standard | 2026-04-01 | 0.5 | none | Tenure is under the standard laptop gate of 1 year. Monitor has no tenure gate. |
-| E207 | standard | 2018-03-01 | 8.6 | none | Used with item `headset`, which is not in the catalog. |
+| E207 | standard | 2018-03-01 | 8.6 | none | Used with item `headset` (on the standard sheet, under the cap) and with item `keyboard` (not in the catalog). |
 | E208 | standard | 2018-03-01 | 8.6 | monitors issued 2020-01-01 and 2021-06-01 | Two monitors is already over the standard cap of 1. Both dates are present. |
 | E209 | contractor | 2018-03-01 | 8.6 | one monitor, 2022-01-15 | The person is on file. The role has no sheet. |
 | E210 | standard | 2018-03-01 | 8.6 | one monitor, 2023-11-15 | Due date 2026-11-15 is 45 days after the as-of date, inside the 90-day buffer. Cap is 1. |

@@ -26,13 +26,13 @@ The function loads the person through `get_employee_info` and the sheet from `PO
 
 The first match returns. Later checks do not run.
 
-1. **Unknown employee.** `get_employee_info` reports `not_found`. Status is `not_found`. This runs before the catalog check, so `E999` asking for a headset is still `not_found`.
+1. **Unknown employee.** `get_employee_info` reports `not_found`. Status is `not_found`. This runs before the catalog check, so `E999` asking for a keyboard is still `not_found`.
 2. **Role has no sheet.** `POLICY` has no entry for the role. Status is `indeterminate`. `contractor` stops here, including when the item is also unknown.
-3. **Item is not in the catalog.** Status is `indeterminate`. `headset` is not a denial. The sheet is not consulted.
+3. **Item is not in the catalog.** Status is `indeterminate`. `keyboard` is not a denial. The sheet is not consulted.
 4. **Item is not on this role's sheet.** The item is in the catalog and absent from the sheet. Status is `out_of_policy`. A standard dock stops here.
 5. **Tenure is below `min_tenure_years`.** Comparison is `<`. Status is `out_of_policy`. This runs before the count checks, so a short tenure stays a denial. The 90-day buffer does not open it. E205's laptop stops here. The same person's monitor has a minimum of 0, so it continues.
 6. **Count is above `max_count`.** Status is `indeterminate`. The file already holds more units than the sheet allows, so approving or denying would be a guess. E208's two monitors, against a standard cap of 1, stop here. Issue dates are not read.
-7. **Count is under `max_count`.** Status is `in_policy`. The role still has room for another unit, so issue dates are not required and a blank date does not escalate. E201's one monitor against a manager cap of 2 stops here even though that monitor is not due.
+7. **Count is under `max_count`.** Status is `in_policy`. The role still has room for another unit, so issue dates are not required and a blank date does not escalate. E201's one monitor against a manager cap of 2 stops here even though that monitor is not due. E207's headset against a standard cap of 1 stops here.
 8. **Count equals `max_count`.** This is a replacement. Decide in this order:
    1. **Missing `issued_on`.** Any unit of this item has no issue date. Status is `indeterminate`. `newest_issued_on` is `None`. No due date is calculated. The seed data has no such unit. The test inserts one and removes it.
    2. **Split history.** More than one unit, the oldest due date is on or before `AS_OF`, and the newest due date is after `AS_OF`. Status is `indeterminate`. One unit cannot split, because the oldest and the newest are the same object. This runs before the buffer. E211 stops here.

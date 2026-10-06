@@ -48,7 +48,7 @@ Role and item arguments are stripped and lowercased before the catalog match. Em
 Assert the exports from `docs/prd/mock-data.md`:
 
 - `AS_OF` is 2026-10-01 and `EARLY_REQUEST_DAYS` is 90.
-- Catalog items are monitor, laptop, and dock, and do not include headset.
+- Catalog items are monitor, laptop, dock, and headset, and do not include keyboard.
 - Policy roles are standard, manager, and director, and do not include contractor.
 - The three sheets match the `max_count` / `refresh_years` / `min_tenure_years` table in that PRD, including the missing standard dock row.
 - The employee ids are exactly E201 through E205 and E207 through E212. There is no E206.
@@ -67,9 +67,9 @@ Assert the exports from `docs/prd/mock-data.md`:
 
 ## `tests/test_get_policy_limits.py`
 
-- `standard` returns monitor `1 / 3 / 0` and laptop `1 / 4 / 1`, and no dock.
-- `manager` returns monitor `2 / 3 / 0`, laptop `1 / 2 / 0`, and dock `1 / 4 / 0`.
-- `director` returns monitor `2 / 2 / 0`, laptop `1 / 2 / 0`, and dock `1 / 3 / 0`.
+- `standard` returns monitor `1 / 3 / 0`, laptop `1 / 4 / 1`, and headset `1 / 3 / 0`, and no dock.
+- `manager` returns monitor `2 / 3 / 0`, laptop `1 / 2 / 0`, dock `1 / 4 / 0`, and headset `1 / 3 / 0`.
+- `director` returns monitor `2 / 2 / 0`, laptop `1 / 2 / 0`, dock `1 / 3 / 0`, and headset `1 / 3 / 0`.
 - `" Manager "` returns the manager sheet.
 - `contractor` and `intern` each return `{"role": "<normalized role>", "status": "not_found"}` and do not raise.
 - A found sheet has no employee id, no yes or no, and every item row, including rows with `min_tenure_years` of 1.
@@ -88,13 +88,14 @@ One test per row. Assert `status`, `within_policy`, and the facts or reason frag
 | E205, laptop | `out_of_policy`, false | Tenure 0.5, minimum 1. |
 | E205, monitor | `in_policy`, true | Same person. Monitor minimum is 0 and the count is 0. |
 | A temporary standard employee at the monitor cap, inserted by the test and removed before the test ends, with `issued_on` None | `indeterminate`, None | Issue date is missing. This person is not part of the seed corpus. |
-| E207, headset | `indeterminate`, None | Headset is not in the catalog. |
+| E207, headset | `in_policy`, true | Count 0, max 1. Headset is on the standard sheet. |
+| E207, keyboard | `indeterminate`, None | Keyboard is not in the catalog. |
 | E208, monitor | `indeterminate`, None | Count 2 is over the max of 1. |
 | E209, monitor | `indeterminate`, None | Contractor has no policy sheet. |
 | E210, monitor | `indeterminate`, None | Due date `2026-11-15` is inside the 90-day buffer. Reason contains `90`. |
 | E211, monitor | `indeterminate`, None | Reason contains both `2020-06-01` and `2026-06-01`. |
 | E999, monitor | `not_found`, None | Reason contains `E999`. |
-| E999, headset | `not_found`, None | Missing employee is decided before the unknown item. |
+| E999, keyboard | `not_found`, None | Missing employee is decided before the unknown item. |
 
 ## `tests/test_flag_for_human_review.py`
 
