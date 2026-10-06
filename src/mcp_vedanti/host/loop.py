@@ -51,7 +51,7 @@ NEED_POLICY_OBSERVATION = (
 )
 EMPLOYEE_LOCKED_OBSERVATION = "The employee id is already bound. Use that id."
 STEP_LIMIT_REPLY = (
-    "I could not finish this request. A person needs to review it."
+    "I'm sorry, I could not finish this request. Please try again or contact IT."
 )
 
 
