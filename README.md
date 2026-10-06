@@ -2,11 +2,15 @@
 
 An IT equipment-request lab. One program classifies a request. A second program talks to an employee and follows that classification.
 
-The server is an MCP service. It looks up an employee, reads that role's policy, and classifies one item. The host is a separate program. It never imports the server code. It calls the server over HTTP, and a local model decides which tool to call next.
+The server is an MCP service. It looks up an employee, reads that role's policy, and classifies one item. The host is a separate program. It never imports the server code. It calls the server over HTTP. A local model names the item, then chooses which tool to call next.
 
 ## How a request is decided
 
-The employee id comes from the command line. The item is the equipment word in the employee's message. The server returns one status, and the host follows it.
+The employee id comes from a prompt or from `--employee-id`. It must look like `E201` (letter `E` and three digits, any case). The host capitalizes it. A well-formed id that is not on file is not a CLI error. Eligibility returns `not_found` and the host escalates.
+
+The item is named in one model call before ReAct. Same-device words may become the catalog word (`headphones` → `headset`). A different device is not rewritten (`computer` is not `laptop`). If extract finds no item, or two or more, the agent files a review and eligibility is not called. `status` in the query set is empty for those rows.
+
+When there is one item, the server returns one status, and the host follows it.
 
 | Status | What the host does |
 |---|---|
@@ -15,7 +19,7 @@ The employee id comes from the command line. The item is the equipment word in t
 | `indeterminate` | File a human review, then say the request was escalated. |
 | `not_found` | File a human review, then say the request was escalated. This is not a denial. |
 
-A claimed role, tenure, equipment list, or policy in the message does not change the record. The server's `reason` is the sentence the reply is written from.
+A claimed role, tenure, equipment list, or policy in the message does not change the record. When eligibility ran, the server's `reason` is the sentence the reply is written from.
 
 ## Layout
 
@@ -23,7 +27,7 @@ A claimed role, tenure, equipment list, or policy in the message does not change
 src/mcp_vedanti/server.py        MCP server. Registers the four tools.
 src/mcp_vedanti/equipment.py     Lookup, policy, eligibility, and tickets.
 src/mcp_vedanti/data.py          Synthetic employees and policy sheets.
-src/mcp_vedanti/host/            Host. Model, MCP client, and request loop.
+src/mcp_vedanti/host/            Host. Model, MCP client, extract, and request loop.
 src/mcp_vedanti/host/queries.json
                                  Saved requests and the expected decision.
 tests/                           Server tests and host tests. No model required.
@@ -31,7 +35,7 @@ docs/prd/                     Server requirements, mock data, and test contract.
 docs/host-queries.md             What each saved request is checking.
 ```
 
-The host loop asks the model for one JSON step at a time: a tool call, or a draft reply. Python runs the tool and appends the observation. After a draft is allowed, a second model call checks the wording. The run file ends with `Verdict:` (`confirm` or `rewrite`) and `Reply:`.
+The host first asks the model to name the item. Then the ReAct loop asks for one JSON step at a time: a tool call, or a draft reply. Python runs the tool and appends the observation. It blocks a skip of lookup or policy, and a tool argument that changes the bound id or item. After a draft is allowed, a second model call checks the wording. The run file ends with `Verdict:` (`confirm` or `rewrite`) and `Reply:`.
 
 ## Requirements
 
@@ -75,14 +79,24 @@ This serves the MCP endpoint at `http://127.0.0.1:8000/mcp`. Leave it running. T
 In a second terminal, with the same virtualenv:
 
 ```bash
-python -m mcp_vedanti.host --employee-id E201 --query "I need a second monitor."
+python -m mcp_vedanti.host
 ```
 
-To run every saved request:
+The host prompts `Employee ID: ` and `Query: ` until each line is non-empty. A bad id shape prints `Employee ID must look like E201.` and asks again. `e201` is stored as `E201`.
+
+Flags still work:
+
+```bash
+python -m mcp_vedanti.host --employee-id e201 --query "I need a second monitor."
+```
+
+To run every saved request, with no prompts:
 
 ```bash
 python -m mcp_vedanti.host --queries
 ```
+
+`--queries` cannot be mixed with `--employee-id` or `--query`.
 
 Each request is printed as it happens and written to `runs/`. That directory is gitignored. A finished file looks like this:
 
@@ -117,4 +131,5 @@ The container installs Python 3.12 and the requirements. It does not install thi
 - `docs/server.md` — the check order and the reason sentences
 - `docs/corpus.md` — why each employee record is in the mock data
 - `docs/host-queries.md` — each saved request and why it approves, denies, or escalates
-- `docs/v2-improvements.md` — cases pulled out of the current query set
+- `docs/extract-prelude.md` — why item extract runs before ReAct
+- `docs/defenses.md` — one-liner design notes

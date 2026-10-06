@@ -24,4 +24,4 @@ Each row is one employee message and the decision the host must follow. Every ro
 | E201 | I want a monitor and a laptop. | | escalate | Extract finds two items. Eligibility is not called. The agent files one review. |
 | E204 | I need a computer. | `indeterminate` | escalate | Extract keeps computer. It does not become laptop. Computer is not in the catalog. |
 
-`status` is empty when eligibility does not run. An employee id that is not on file is still out of this set. That case is in `docs/v2-improvements.md`.
+`status` is empty when eligibility does not run. An employee id that is not on file is still out of this set.
